@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
 import API from "../../api/axios";
-import { useNavigate } from "react-router-dom";
 import {
   CheckCircle,
   Clock,
@@ -14,7 +14,6 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import LogoNoBG from "../../assets/LogoNoBG.png";
 
-// --- Responsive Header component ---
 function HeaderResponsive({ navigate }) {
   const [open, setOpen] = useState(false);
 
@@ -43,7 +42,6 @@ function HeaderResponsive({ navigate }) {
             MotoRent
           </span>
         </div>
-        {/* Desktop button */}
         <div className="space-x-1 sm:space-x-2 gap-2 hidden sm:flex">
           <button
             onClick={() => navigate("/dashboard/history")}
@@ -63,8 +61,6 @@ function HeaderResponsive({ navigate }) {
             Logout
           </button>
         </div>
-
-        {/* Mobile hamburger */}
         <div className="flex sm:hidden">
           <MobileNavbar navigate={navigate} open={open} setOpen={setOpen} />
         </div>
@@ -73,11 +69,9 @@ function HeaderResponsive({ navigate }) {
   );
 }
 
-// --- Mobile Navbar with Drawer ---
 function MobileNavbar({ navigate, open, setOpen }) {
   return (
     <>
-      {/* Hamburger button */}
       <button
         className="flex items-center justify-center w-10 h-10 rounded-full border border-blue-100 bg-blue-50 hover:bg-blue-100 transition focus:outline-none"
         onClick={() => setOpen((v) => !v)}
@@ -86,8 +80,6 @@ function MobileNavbar({ navigate, open, setOpen }) {
       >
         <Menu className="w-6 h-6 text-blue-700" />
       </button>
-
-      {/* Drawer menu */}
       <AnimatePresence>
         {open && (
           <motion.div
@@ -145,30 +137,45 @@ export default function HistoryUser() {
   const [riwayat, setRiwayat] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const fetchRiwayat = async () => {
+    setLoading(true);
+    try {
+      const res = await API.get("/penyewaan/user", {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      setRiwayat(res.data);
+    } catch (err) {
+      alert("Gagal memuat riwayat.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchRiwayat = async () => {
-      try {
-        const res = await API.get("/penyewaan/user", {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        });
-        setRiwayat(res.data);
-      } catch (err) {
-        alert("Gagal memuat riwayat.");
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchRiwayat();
   }, []);
 
-  // Utility untuk gambar motor
-  const renderImage = (gambar) =>
-    gambar ? gambar : "https://via.placeholder.com/300x200?text=No+Image";
+  useEffect(() => {
+    const urlParams = new URLSearchParams(location.search);
+    if (urlParams.get("justPaid") === "true") {
+      fetchRiwayat(); // Refresh data
 
-  // Badge status vibrant
+      // Hapus query setelah 3 detik
+      const timeout = setTimeout(() => {
+        navigate(location.pathname, { replace: true });
+      }, 3000);
+
+      return () => clearTimeout(timeout);
+    }
+  }, [location.search, location.pathname, navigate]);
+
+  const renderImage = (gambar) =>
+    gambar || "https://via.placeholder.com/300x200?text=No+Image";
+
   const getStatusBadge = (status) => {
     let color, icon, label;
     switch (status) {
@@ -203,7 +210,6 @@ export default function HistoryUser() {
     );
   };
 
-  // Card statistik vibrant
   const stats = [
     {
       label: "Total",
@@ -235,12 +241,8 @@ export default function HistoryUser() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-yellow-50 font-sans">
-      {/* Header */}
       <HeaderResponsive navigate={navigate} />
-
-      {/* Wrapper utama, kasih padding top biar konten turun */}
       <div className="max-w-6xl mx-auto px-4 sm:px-8 pt-28 sm:pt-32 pb-10">
-        {/* Statistik */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
           {stats.map((stat, idx) => (
             <motion.div
@@ -256,8 +258,6 @@ export default function HistoryUser() {
             </motion.div>
           ))}
         </div>
-
-        {/* Loading */}
         {loading ? (
           <div className="flex items-center justify-center min-h-[40vh]">
             <Loader2 className="animate-spin w-8 h-8 text-indigo-600 mr-2" />
@@ -265,8 +265,7 @@ export default function HistoryUser() {
               Memuat riwayat...
             </span>
           </div>
-        ) : // Konten
-        riwayat.length === 0 ? (
+        ) : riwayat.length === 0 ? (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -350,65 +349,6 @@ export default function HistoryUser() {
           </div>
         )}
       </div>
-
-      {/* Footer vibrant */}
-      <footer className="bg-blue-900 text-white py-14 mt-20">
-        <div className="max-w-7xl mx-auto grid md:grid-cols-4 gap-8 px-6">
-          <div className="md:col-span-2">
-            <h4 className="text-lg font-bold mb-3">Lokasi Kami</h4>
-            <ul className="text-sm space-y-1">
-              <li>📍 Jakarta Selatan - Kemang Utara VII G</li>
-              <li>📧 admin@sewamotor.id</li>
-              <li>📞 085776828467</li>
-              <li>📸 Instagram: @sewamotor.id</li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="text-lg font-bold mb-3">Layanan</h4>
-            <ul className="text-sm space-y-1">
-              <li>Sewa Motor 24 Jam</li>
-              <li>Antar–Jemput Kendaraan</li>
-              <li>Tanpa DP/Deposit</li>
-              <li>Layanan Asuransi</li>
-            </ul>
-          </div>
-          <div>
-            <h4 className="text-lg font-bold mb-3">Support</h4>
-            <ul className="text-sm space-y-1">
-              <li>FAQ</li>
-              <li>Testimoni</li>
-              <li>Privacy Policy</li>
-              <li>Terms of Service</li>
-            </ul>
-          </div>
-        </div>
-        <div className="border-t border-white/20 mt-10 pt-6 text-center text-sm text-white/80">
-          <p className="mb-3 font-semibold">Dukungan Pembayaran:</p>
-          <div className="flex flex-wrap justify-center gap-4">
-            {[
-              "VISA",
-              "JCB",
-              "MasterCard",
-              "AMEX",
-              "BRI",
-              "BNI",
-              "BCA",
-              "UOB",
-              "Permata",
-              "OVO",
-              "Gopay",
-              "Tokopedia",
-              "Blibli",
-            ].map((bank) => (
-              <span key={bank}>{bank}</span>
-            ))}
-          </div>
-          <p className="mt-6 text-xs">
-            &copy; {new Date().getFullYear()} PT SEWAMOTOR INDONESIA - Powered
-            by SewaMotor.id
-          </p>
-        </div>
-      </footer>
     </div>
   );
 }
