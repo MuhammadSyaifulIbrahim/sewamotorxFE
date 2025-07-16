@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useLocation } from "react-router-dom";
 import API from "../../api/axios";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -14,23 +14,25 @@ import {
 export default function DetailPenyewaan() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
   const [penyewaan, setPenyewaan] = useState(null);
   const [modalImage, setModalImage] = useState(null);
 
+  const fetchDetail = async () => {
+    try {
+      const res = await API.get(`/penyewaan/${id}`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+      setPenyewaan(res.data);
+    } catch (err) {
+      alert("Data tidak ditemukan.");
+      navigate("/dashboard/history");
+    }
+  };
+
   useEffect(() => {
-    const fetchDetail = async () => {
-      try {
-        const res = await API.get(`/penyewaan/${id}`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        });
-        setPenyewaan(res.data);
-      } catch (err) {
-        alert("Data tidak ditemukan.");
-        navigate("/dashboard/history");
-      }
-    };
     fetchDetail();
   }, [id, navigate]);
 
@@ -43,14 +45,15 @@ export default function DetailPenyewaan() {
   }, [modalImage]);
 
   useEffect(() => {
-    // Jika menunggu pembayaran, scroll ke tombol pembayaran
-    if (penyewaan?.status === "MENUNGGU_PEMBAYARAN") {
-      setTimeout(() => {
-        const bayarBtn = document.getElementById("bayar-sekarang");
-        bayarBtn && bayarBtn.scrollIntoView({ behavior: "smooth" });
-      }, 700);
+    const urlParams = new URLSearchParams(location.search);
+    if (urlParams.get("justPaid") === "true") {
+      fetchDetail();
+      const timeout = setTimeout(() => {
+        navigate(location.pathname, { replace: true });
+      }, 3000);
+      return () => clearTimeout(timeout);
     }
-  }, [penyewaan]);
+  }, [location.search, location.pathname, navigate]);
 
   if (!penyewaan)
     return (
@@ -105,7 +108,6 @@ export default function DetailPenyewaan() {
     );
   };
 
-  // Modal preview animasi
   const ModalImagePreview = ({ src, onClose }) => (
     <AnimatePresence>
       <motion.div
@@ -164,234 +166,72 @@ export default function DetailPenyewaan() {
   );
 
   return (
-    <div className="flex flex-col min-h-screen bg-gradient-to-br from-blue-50 via-white to-yellow-50">
-      <AnimatePresence>
-        {modalImage && (
-          <ModalImagePreview
-            src={modalImage}
-            onClose={() => setModalImage(null)}
-          />
-        )}
-      </AnimatePresence>
-
-      {/* Sticky Header Back */}
-      <div className="sticky top-0 z-40 bg-white/70 backdrop-blur shadow px-2 sm:px-6 py-2">
-        <button
-          onClick={() => navigate("/dashboard/history")}
-          className="flex items-center gap-2 text-blue-800 hover:text-yellow-600 hover:underline font-bold text-base"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          Kembali ke Riwayat
-        </button>
-      </div>
-
-      <div className="flex-grow px-2 sm:px-4 py-8">
-        <div className="max-w-5xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 22 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ type: "spring", stiffness: 170, damping: 16 }}
-            className="bg-white rounded-3xl shadow-2xl p-5 sm:p-9 space-y-8 border border-blue-100"
+    <div className="min-h-screen py-10 px-4">
+      {modalImage && (
+        <ModalImagePreview
+          src={modalImage}
+          onClose={() => setModalImage(null)}
+        />
+      )}
+      <div className="max-w-3xl mx-auto bg-white rounded-3xl shadow-xl border border-blue-100 p-6">
+        <div className="flex items-center justify-between mb-6">
+          <button
+            onClick={() => navigate("/dashboard/history")}
+            className="flex items-center text-blue-700 hover:underline"
           >
-            <h2 className="text-2xl font-black text-indigo-700 text-center drop-shadow-sm tracking-wide mb-2">
-              Detail Penyewaan{" "}
-              <span className="text-blue-500">#{penyewaan.id}</span>
-            </h2>
-            <div className="flex flex-col md:flex-row gap-8 items-start">
-              <motion.div
-                initial={{ scale: 0.95 }}
-                animate={{ scale: 1 }}
-                className="bg-gray-50 rounded-xl overflow-hidden shadow aspect-video min-w-[200px] max-w-[380px] flex items-center justify-center cursor-pointer border-2 border-blue-100 hover:border-yellow-400 transition"
-                onClick={() =>
-                  penyewaan.kendaraan?.gambar &&
-                  setModalImage(penyewaan.kendaraan.gambar)
-                }
-                title="Klik untuk perbesar"
-              >
-                <img
-                  src={
-                    penyewaan.kendaraan?.gambar
-                      ? penyewaan.kendaraan.gambar
-                      : "https://via.placeholder.com/300x200?text=No+Image"
-                  }
-                  alt={penyewaan.kendaraan?.nama}
-                  className="w-full h-full object-cover"
-                />
-              </motion.div>
-              <div className="flex-1 space-y-2 text-[15px] sm:text-base text-gray-800">
-                <div className="flex gap-2 flex-wrap mb-1">
-                  {badgeStatus(penyewaan.status)}
-                  <span className="inline-flex items-center px-2 py-1 bg-blue-100 text-blue-700 rounded-full font-semibold text-xs">
-                    ⏳ {penyewaan.durasi_hari} hari
-                  </span>
-                  <span className="inline-flex items-center px-2 py-1 bg-green-100 text-green-700 rounded-full font-semibold text-xs">
-                    💸 Rp{" "}
-                    {Number(penyewaan.harga_total).toLocaleString("id-ID")}
-                  </span>
-                </div>
-                <div className="font-bold text-lg text-indigo-700 mb-1 flex items-center gap-2">
-                  <span>{penyewaan.kendaraan?.nama}</span>
-                  <span className="ml-1 font-normal text-xs text-gray-400">
-                    #{penyewaan.kendaraan?.id}
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-3 mb-2">
-                  <span className="bg-yellow-50 text-yellow-800 px-2 py-1 rounded text-xs">
-                    {penyewaan.kendaraan?.tipe}
-                  </span>
-                  <span className="bg-indigo-50 text-indigo-700 px-2 py-1 rounded text-xs">
-                    {penyewaan.kendaraan?.transmisi}
-                  </span>
-                </div>
-                <div>
-                  <span className="font-semibold">Jadwal:</span>{" "}
-                  {new Date(penyewaan.jadwal_booking).toLocaleString("id-ID", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </div>
-                <div>
-                  <span className="font-semibold">Metode Pengambilan:</span>
-                  <div>
-                    {penyewaan.metode_pengambilan === "Diantar" ? (
-                      <span>
-                        🚚 Diantar ke Lokasi Kamu:
-                        <br />
-                        <span className="ml-4">
-                          {penyewaan.alamat_pengambilan || "-"}
-                        </span>
-                      </span>
-                    ) : (
-                      <span>
-                        📍 Ambil di Showroom <br />
-                        <span className="ml-4">{showroomAlamat}</span>
-                        <a
-                          href={linkMaps}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="ml-2 text-blue-600 underline text-xs inline-flex items-center"
-                        >
-                          <ExternalLink className="w-4 h-4 mr-1" /> Lihat di
-                          Maps
-                        </a>
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <span className="font-semibold">Metode Pengembalian:</span>
-                  <div>
-                    {penyewaan.metode_pengembalian === "Diambil" ? (
-                      <span>
-                        🚚 Diambil dari Lokasi Kamu:
-                        <br />
-                        <span className="ml-4">
-                          {penyewaan.alamat_pengembalian || "-"}
-                        </span>
-                      </span>
-                    ) : (
-                      <span>
-                        📍 Kembali ke Showroom <br />
-                        <span className="ml-4">{showroomAlamat}</span>
-                        <a
-                          href={linkMaps}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="ml-2 text-blue-600 underline text-xs inline-flex items-center"
-                        >
-                          <ExternalLink className="w-4 h-4 mr-1" /> Lihat di
-                          Maps
-                        </a>
-                      </span>
-                    )}
-                  </div>
-                </div>
-                <div>
-                  <span className="font-semibold">Keterangan:</span>{" "}
-                  {penyewaan.keterangan || "-"}
-                </div>
-                <div>
-                  <span className="font-semibold">Pembayaran:</span>{" "}
-                  {penyewaan.metode_pembayaran?.toUpperCase() || "-"}
-                </div>
-              </div>
-            </div>
-            {/* Dokumen KTP & SIM */}
-            <div className="grid md:grid-cols-2 gap-7 pt-7 border-t">
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-sm font-bold">Foto KTP</span>
-                </div>
-                <div className="bg-gray-100 rounded-xl overflow-hidden h-44 flex items-center justify-center border-2 border-blue-50">
-                  <img
-                    src={
-                      penyewaan.foto_ktp
-                        ? penyewaan.foto_ktp
-                        : "https://via.placeholder.com/300x200?text=No+Image"
-                    }
-                    alt="Foto KTP"
-                    className="object-cover w-full h-full cursor-pointer hover:scale-105 transition"
-                    onClick={() =>
-                      penyewaan.foto_ktp && setModalImage(penyewaan.foto_ktp)
-                    }
-                    title="Klik untuk perbesar"
-                  />
-                </div>
-              </div>
-              <div>
-                <div className="flex items-center gap-2 mb-2">
-                  <span className="text-sm font-bold">Foto SIM</span>
-                </div>
-                <div className="bg-gray-100 rounded-xl overflow-hidden h-44 flex items-center justify-center border-2 border-blue-50">
-                  <img
-                    src={
-                      penyewaan.foto_sim
-                        ? penyewaan.foto_sim
-                        : "https://via.placeholder.com/300x200?text=No+Image"
-                    }
-                    alt="Foto SIM"
-                    className="object-cover w-full h-full cursor-pointer hover:scale-105 transition"
-                    onClick={() =>
-                      penyewaan.foto_sim && setModalImage(penyewaan.foto_sim)
-                    }
-                    title="Klik untuk perbesar"
-                  />
-                </div>
-              </div>
-            </div>
-            {/* Bayar sekarang jika menunggu pembayaran */}
-            {penyewaan.status === "MENUNGGU_PEMBAYARAN" &&
-              penyewaan.payment_url && (
-                <div className="mt-8 border-t pt-6 text-center">
-                  <motion.div
-                    initial={{ opacity: 0, y: 18 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.3 }}
-                  >
-                    <p className="text-gray-700 mb-3 text-sm">
-                      Status pembayaran:{" "}
-                      <span className="font-semibold text-yellow-700">
-                        Belum Lunas
-                      </span>
-                    </p>
-                    <a
-                      href={penyewaan.payment_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 bg-yellow-400 text-blue-900 font-bold px-8 py-3 rounded-full hover:bg-yellow-500 hover:scale-105 transition text-lg shadow-lg"
-                      id="bayar-sekarang"
-                    >
-                      <CreditCard className="w-6 h-6" />
-                      Bayar Sekarang
-                    </a>
-                  </motion.div>
-                </div>
-              )}
-          </motion.div>
+            <ArrowLeft className="w-5 h-5 mr-1" /> Kembali
+          </button>
+          {badgeStatus(penyewaan.status)}
         </div>
+        <h1 className="text-2xl font-bold mb-4 text-indigo-700">
+          Detail Penyewaan #{penyewaan.id}
+        </h1>
+        <div className="grid gap-4">
+          <div>
+            <strong>Nama Motor:</strong> {penyewaan.kendaraan?.nama || "-"}
+          </div>
+          <div>
+            <strong>Jadwal Booking:</strong>{" "}
+            {new Date(penyewaan.jadwal_booking).toLocaleString("id-ID")}
+          </div>
+          <div>
+            <strong>Durasi:</strong> {penyewaan.durasi_hari} hari
+          </div>
+          <div>
+            <strong>Harga Total:</strong> Rp{" "}
+            {Number(penyewaan.harga_total).toLocaleString("id-ID")}
+          </div>
+          <div>
+            <strong>Pengambilan:</strong>{" "}
+            {penyewaan.metode_pengambilan === "Diantar"
+              ? `Diantar ke: ${penyewaan.alamat_pengambilan}`
+              : `Ambil di showroom: ${showroomAlamat}`}
+          </div>
+          <div>
+            <strong>Pengembalian:</strong>{" "}
+            {penyewaan.metode_pengembalian === "Diambil"
+              ? `Diambil dari: ${penyewaan.alamat_pengembalian}`
+              : `Kembali ke showroom: ${showroomAlamat}`}
+          </div>
+        </div>
+
+        {penyewaan.status === "MENUNGGU_PEMBAYARAN" &&
+          penyewaan.payment_url && (
+            <div className="mt-8 text-center border-t pt-6">
+              <p className="text-yellow-700 font-semibold mb-3">
+                ⚠️ Status: Belum Lunas
+              </p>
+              <a
+                href={penyewaan.payment_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                id="bayar-sekarang"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-yellow-400 hover:bg-yellow-500 text-blue-900 font-bold rounded-full shadow"
+              >
+                <CreditCard className="w-5 h-5" /> Bayar Sekarang
+              </a>
+            </div>
+          )}
       </div>
       {/* Footer */}
       <footer className="bg-blue-900 text-white py-12 sm:py-16 px-3 sm:px-6">
