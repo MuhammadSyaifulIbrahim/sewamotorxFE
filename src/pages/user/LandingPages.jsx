@@ -42,7 +42,7 @@ const MOTORLIST = [
     brand: "YAMAHA",
     tahun: "2023",
     img: NMAX,
-    price: 65000,
+    price: 150000,
     type: "Matic",
     diskon: 15,
     best: true,
@@ -52,7 +52,7 @@ const MOTORLIST = [
     brand: "YAMAHA",
     tahun: "2022",
     img: AEROX,
-    price: 60000,
+    price: 100000,
     type: "Matic",
     diskon: 0,
     best: false,
@@ -62,7 +62,7 @@ const MOTORLIST = [
     brand: "HONDA",
     tahun: "2023",
     img: SCOOPY,
-    price: 48000,
+    price: 50000,
     type: "Matic",
     diskon: 0,
     best: false,
@@ -72,7 +72,7 @@ const MOTORLIST = [
     brand: "YAMAHA",
     tahun: "2021",
     img: MIO,
-    price: 42000,
+    price: 50000,
     type: "Matic",
     diskon: 0,
     best: false,
@@ -82,7 +82,7 @@ const MOTORLIST = [
     brand: "YAMAHA",
     tahun: "2023",
     img: XMAX,
-    price: 100000,
+    price: 200000,
     type: "Matic",
     diskon: 20,
     best: true,
@@ -92,7 +92,7 @@ const MOTORLIST = [
     brand: "HONDA",
     tahun: "2022",
     img: PCX,
-    price: 70000,
+    price: 130000,
     type: "Matic",
     diskon: 0,
     best: false,
@@ -296,13 +296,26 @@ export default function LandingPages() {
                     <span className="bg-blue-100 text-blue-800 text-xs rounded-full px-2 py-0.5">
                       {m.type}
                     </span>
-                    <span className="font-bold text-base text-green-600">
-                      Rp
-                      {(m.price * (1 - (m.diskon || 0) / 100)).toLocaleString(
-                        "id-ID"
+                    <div className="text-sm text-gray-700">
+                      {m.diskon > 0 ? (
+                        <div className="flex items-center gap-2">
+                          <span className="line-through text-red-500 font-medium">
+                            Rp{m.price.toLocaleString("id-ID")}
+                          </span>
+                          <span className="text-green-600 font-bold text-base">
+                            Rp
+                            {(m.price * (1 - m.diskon / 100)).toLocaleString(
+                              "id-ID"
+                            )}
+                            /hari
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-green-600 font-bold text-base">
+                          Rp{m.price.toLocaleString("id-ID")}/hari
+                        </span>
                       )}
-                      /hari
-                    </span>
+                    </div>
                   </div>
                   <div className="flex items-center gap-1 text-yellow-500 mb-2">
                     {[...Array(5)].map((_, j) => (
@@ -315,24 +328,6 @@ export default function LandingPages() {
                     <span>📱 Holder HP</span>
                   </div>
                 </div>
-                <button
-                  className="w-full bg-gradient-to-r from-blue-600 to-blue-400 text-white font-bold py-2 rounded-b-xl transition hover:from-blue-700 hover:to-blue-500"
-                  onClick={() => {
-                    const token = localStorage.getItem("token");
-                    if (!token) {
-                      alert(
-                        "Silakan login terlebih dahulu untuk memesan motor."
-                      );
-                      navigate(
-                        `/login?redirect=/booking/${m.name.toLowerCase()}`
-                      );
-                    } else {
-                      navigate(`/booking/${m.name.toLowerCase()}`);
-                    }
-                  }}
-                >
-                  Sewa {m.name}
-                </button>
               </motion.div>
             ))}
           </div>
@@ -394,7 +389,283 @@ export default function LandingPages() {
         </div>
       </section>
 
-      {/* ...Section lain tetap sama kaya sebelumnya... */}
+      {/* Location */}
+      <section
+        className="bg-blue-800 text-yellow-400 py-16 sm:py-20 px-3 sm:px-6"
+        id="location"
+      >
+        <div className="max-w-6xl mx-auto text-center border border-yellow-400 rounded-xl py-7 sm:py-10 px-2 sm:px-4 shadow-lg">
+          <h2 className="text-2xl sm:text-4xl font-bold mb-4 sm:mb-6 text-yellow-400">
+            Available At
+          </h2>
+          <p className="text-base sm:text-lg md:text-xl font-semibold mb-5 sm:mb-6 leading-relaxed">
+            Jakarta | Jakarta Selatan
+          </p>
+          <a
+            href="https://wa.me/6285776828467"
+            className="bg-yellow-400 hover:bg-yellow-300 text-black font-semibold py-2 px-5 sm:px-6 rounded shadow transition"
+          >
+            Contact Us
+          </a>
+        </div>
+        <div className="mt-10 sm:mt-16 grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-10 items-center">
+          <div className="w-full h-64 sm:h-80 rounded-xl overflow-hidden">
+            <iframe
+              title="Map Location"
+              src="https://www.google.com/maps?q=-6.2642677,106.8194088&hl=en&z=14&output=embed"
+              width="100%"
+              height="100%"
+              loading="lazy"
+              className="rounded-xl border-2 border-yellow-400 min-h-[220px]"
+            ></iframe>
+          </div>
+          <div className="text-left text-white">
+            <h3 className="text-xl sm:text-2xl font-bold text-yellow-400 mb-2">
+              Head Office
+            </h3>
+            <p className="text-base sm:text-lg font-semibold mb-1">UI Works</p>
+            <a
+              href="https://maps.app.goo.gl/fyabSHRKeVKWJnrB6"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-gray-300 hover:text-yellow-300 block mb-4"
+            >
+              Jalan Kemang Utara VII G No.2 RT 001 RW 004, Jakarta Selatan,
+              Kodepos 12730
+            </a>
+            <p className="text-sm text-gray-300">
+              Buka: <span className="text-white">Senin – Jumat</span> (kecuali
+              tanggal merah)
+              <br />
+              Jam: <span className="text-white">09:00 – 17:00</span>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* About/Layanan */}
+      <section
+        id="about"
+        className="bg-white text-gray-800 py-20 sm:py-24 px-3 sm:px-6"
+      >
+        <div className="max-w-6xl mx-auto text-center mb-10 sm:mb-12">
+          <h3 className="text-2xl sm:text-3xl font-bold mb-2 text-blue-800">
+            LAYANAN KAMI
+          </h3>
+          <p className="text-gray-600">
+            Kami menawarkan berbagai layanan sewa motor Jakarta yang fleksibel
+            dan nyaman, siap memenuhi kebutuhan perjalanan Anda.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-7 sm:gap-8">
+          {[
+            {
+              title: "Sewa Motor 24 Jam",
+              desc: "Layanan sewa motor harian, mingguan, atau bulanan. Armada terawat, harga kompetitif, siap pakai.",
+              icon: (
+                <FaCarSide className="text-3xl sm:text-4xl text-blue-700" />
+              ),
+            },
+            {
+              title: "Sewa Hiace & City Tour",
+              desc: "Keliling Jakarta makin nyaman. Hiace dan driver profesional, cocok buat wisata/group event.",
+              icon: (
+                <FaShuttleVan className="text-3xl sm:text-4xl text-blue-700" />
+              ),
+            },
+            {
+              title: "Antar – Jemput Kendaraan",
+              desc: "Motor diantar & diambil ke lokasi Anda. Praktis, aman, fleksibel.",
+              icon: (
+                <FaHandshake className="text-3xl sm:text-4xl text-blue-700" />
+              ),
+            },
+            {
+              title: "Tanpa DP/Deposit & Survey",
+              desc: "Booking cepat tanpa perlu DP/Deposit, tanpa survey. Tinggal klik & berangkat!",
+              icon: (
+                <FaMoneyCheckAlt className="text-3xl sm:text-4xl text-blue-700" />
+              ),
+            },
+          ].map(({ title, desc, icon }, i) => (
+            <div
+              key={i}
+              className="flex gap-3 sm:gap-4 bg-gradient-to-br from-blue-50 via-white to-yellow-100 rounded-2xl shadow-md p-5 sm:p-6 hover:shadow-lg transition"
+            >
+              <div className="flex-shrink-0">{icon}</div>
+              <div className="text-left">
+                <h4 className="font-bold text-base sm:text-lg mb-1 text-blue-800">
+                  {title}
+                </h4>
+                <p className="text-sm text-gray-700 leading-snug">{desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Cara Rental */}
+      <section
+        className="bg-white text-gray-800 py-20 sm:py-24 px-3 sm:px-6"
+        id="cara-rental"
+      >
+        <div className="max-w-6xl mx-auto text-center">
+          <h3 className="text-xl sm:text-2xl md:text-3xl font-bold mb-10 sm:mb-12">
+            <span className="text-black">Cara Rental di </span>
+            <span className="text-blue-800">MotoRent</span>
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+            {[
+              {
+                title: "Pesan Kendaraan",
+                desc: "Pilih motor & tanggal via website.",
+                icon: "📄",
+              },
+              {
+                title: "Tunggu Konfirmasi",
+                desc: "Admin hubungi via WhatsApp.",
+                icon: "⏳",
+              },
+              {
+                title: "Bayar & Nikmati",
+                desc: "Lakukan pembayaran, motor siap digunakan.",
+                icon: "💳",
+              },
+            ].map((item, i) => (
+              <div
+                key={i}
+                className="p-5 sm:p-6 border rounded-2xl shadow hover:shadow-md transition bg-blue-50/30"
+              >
+                <div className="text-3xl sm:text-4xl mb-4">{item.icon}</div>
+                <h4 className="text-base sm:text-lg font-bold mb-2">
+                  {item.title}
+                </h4>
+                <p className="text-sm text-gray-600">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Keunggulan */}
+      <section className="bg-gray-50 text-gray-800 py-16 sm:py-20 px-3 sm:px-6">
+        <div className="max-w-6xl mx-auto text-center">
+          <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-blue-800 mb-8 sm:mb-10">
+            Kenapa Pilih MotoRent?
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+            {[
+              {
+                icon: "🕒",
+                title: "Sewa 24 Jam",
+                desc: "Fleksibel sesuai kebutuhan.",
+              },
+              {
+                icon: "🛡️",
+                title: "Asuransi Unit",
+                desc: "Perlindungan kendaraan mulai 15 ribu.",
+              },
+              {
+                icon: "💰",
+                title: "Harga Hemat",
+                desc: "Mulai 40K/24 Jam, transparan, tanpa biaya tersembunyi.",
+              },
+              {
+                icon: "📞",
+                title: "CS Responsif",
+                desc: "Support cepat via WhatsApp.",
+              },
+              {
+                icon: "📍",
+                title: "Antar Jemput",
+                desc: "Motor diantar ke lokasi Anda.",
+              },
+              {
+                icon: "🆓",
+                title: "Tanpa DP/Deposit",
+                desc: "Booking tanpa DP/Deposit, tanpa ribet.",
+              },
+            ].map((item, i) => (
+              <div
+                key={i}
+                className="p-5 sm:p-6 rounded-2xl bg-white border hover:shadow-lg transition"
+              >
+                <div className="text-2xl sm:text-3xl mb-3">{item.icon}</div>
+                <h4 className="text-md font-bold mb-1">{item.title}</h4>
+                <p className="text-sm text-gray-600">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section id="faq" className="py-20 sm:py-24 bg-white text-gray-800">
+        <div className="max-w-6xl mx-auto px-2 sm:px-4">
+          <div className="text-center mb-10 sm:mb-12">
+            <h3 className="text-2xl sm:text-3xl font-bold mb-2 text-blue-800">
+              FAQ
+            </h3>
+            <p className="text-gray-500 text-sm sm:text-base">
+              Pertanyaan yang sering ditanyakan user
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-7 sm:gap-10">
+            {[
+              {
+                icon: "📋",
+                q: "Bagaimana cara pesan motor?",
+                a: "Pilih motor, isi form, ikuti instruksi di WhatsApp.",
+              },
+              {
+                icon: "🧾",
+                q: "Dokumen yang dibutuhkan?",
+                a: "KTP, SIM, atau kartu identitas lain.",
+              },
+              {
+                icon: "🚗",
+                q: "Lepas kunci atau driver?",
+                a: "Saat ini baru tersedia lepas kunci.",
+              },
+              {
+                icon: "🔞",
+                q: "Usia minimum sewa?",
+                a: "Minimal 17 tahun dengan identitas valid.",
+              },
+              {
+                icon: "💸",
+                q: "Biaya tambahan luar kota?",
+                a: "Ada tambahan, dikonfirmasi admin sebelum sewa.",
+              },
+              {
+                icon: "📦",
+                q: "Layanan antar jemput?",
+                a: "Ada, tarif mulai 50 ribu, bisa dipilih saat booking.",
+              },
+              {
+                icon: "💳",
+                q: "Cara bayar?",
+                a: "Transfer bank/e-wallet/kartu kredit, dibayar saat serah terima.",
+              },
+              {
+                icon: "⛽",
+                q: "Harus isi bensin sebelum kembali?",
+                a: "Kembalikan sesuai level saat terima motor.",
+              },
+            ].map(({ icon, q, a }, i) => (
+              <div key={i} className="flex items-start gap-3 sm:gap-4">
+                <div className="text-3xl sm:text-4xl text-blue-700">{icon}</div>
+                <div>
+                  <h4 className="font-semibold text-base sm:text-lg mb-1">
+                    {q}
+                  </h4>
+                  <p className="text-sm text-gray-600 leading-relaxed">{a}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
       {/* Footer */}
       <footer className="bg-blue-900 text-white py-12 sm:py-16 px-3 sm:px-6">
