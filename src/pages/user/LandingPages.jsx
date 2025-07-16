@@ -678,7 +678,7 @@ export default function LandingPages() {
               <li>📍 Jakarta Selatan - Kemang Utara VII G</li>
             </ul>
             <div className="mt-6 space-y-1 text-sm">
-              <p>📧 motorent@gmail.com</p>
+              <p>📧 muhammadsyaifulibrahim352@gmail.com</p>
               <p>📞 085776828467 </p>
               <p>📸 Instagram: @motorent</p>
             </div>

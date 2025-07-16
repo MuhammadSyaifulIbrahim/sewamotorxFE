@@ -393,6 +393,64 @@ export default function DetailPenyewaan() {
           </motion.div>
         </div>
       </div>
+      {/* Footer */}
+      <footer className="bg-blue-900 text-white py-12 sm:py-16 px-3 sm:px-6">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
+          <div className="md:col-span-2">
+            <h4 className="font-semibold text-white text-lg mb-4">
+              Lokasi Kami
+            </h4>
+            <ul className="space-y-2 text-sm">
+              <li>📍 Jakarta Selatan - Kemang Utara VII G</li>
+            </ul>
+            <div className="mt-6 space-y-1 text-sm">
+              <p>📧 muhammadsyaifulibrahim352@gmail.com</p>
+              <p>📞 085776828467 </p>
+              <p>📸 Instagram: @motorent</p>
+            </div>
+          </div>
+          <div>
+            <h4 className="font-semibold text-white text-lg mb-4">Layanan</h4>
+            <ul className="text-sm space-y-2">
+              <li>Sewa Motor 24 Jam</li>
+              <li>Antar–Jemput Kendaraan</li>
+              <li>Tanpa DP/Deposit</li>
+              <li>Layanan Asuransi</li>
+            </ul>
+          </div>
+          <div>
+            <h4 className="font-semibold text-white text-lg mb-4">Support</h4>
+            <ul className="text-sm space-y-2">
+              <li>FAQ</li>
+              <li>Testimoni</li>
+              <li>Privacy Policy</li>
+              <li>Terms of Service</li>
+            </ul>
+          </div>
+        </div>
+        <div className="border-t border-white/20 mt-8 sm:mt-10 pt-6 sm:pt-8 text-center">
+          <h5 className="font-semibold mb-3 sm:mb-4 text-white">
+            MotoRent Mendukung Pembayaran
+          </h5>
+          <div className="flex flex-wrap justify-center gap-3 sm:gap-4 text-xs sm:text-sm text-white/80">
+            <span>VISA</span>
+            <span>JCB</span>
+            <span>MasterCard</span>
+            <span>AMEX</span>
+            <span>BRI</span>
+            <span>BNI</span>
+            <span>BCA</span>
+            <span>OVO</span>
+            <span>Gopay</span>
+            <span>Tokopedia</span>
+            <span>Blibli</span>
+          </div>
+          <p className="text-xs text-white/60 mt-6">
+            &copy; {new Date().getFullYear()} PT SEWAMOTOR INDONESIA - Powered
+            by MotoRent
+          </p>
+        </div>
+      </footer>
     </div>
   );
 }
