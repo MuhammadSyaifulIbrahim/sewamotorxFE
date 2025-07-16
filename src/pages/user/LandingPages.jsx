@@ -260,13 +260,14 @@ export default function LandingPages() {
                 }}
                 transition={{ type: "spring", stiffness: 200, damping: 17 }}
                 className={`
-                  motor-card relative rounded-2xl
-                  min-w-[82vw] max-w-[94vw]
-                  sm:min-w-[320px] sm:max-w-xs
-                  md:min-w-[260px] md:max-w-[320px]
-                  w-full shadow-xl overflow-hidden border border-blue-100 bg-white text-black group snap-center
-                `}
+      motor-card relative rounded-2xl
+      min-w-[82vw] max-w-[94vw]
+      sm:min-w-[320px] sm:max-w-xs
+      md:min-w-[260px] md:max-w-[320px]
+      w-full shadow-xl overflow-hidden border border-blue-100 bg-white text-black group snap-center
+    `}
               >
+                {/* Badge Diskon dan Best Seller */}
                 {m.diskon > 0 && (
                   <span className="absolute top-4 right-4 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full z-20 shadow">
                     -{m.diskon}%
@@ -277,6 +278,8 @@ export default function LandingPages() {
                     Best Seller
                   </span>
                 )}
+
+                {/* Gambar Motor */}
                 <div className="w-full h-[34vw] max-h-[180px] sm:h-[170px] md:h-[180px] flex items-center justify-center bg-white pt-2">
                   <img
                     src={m.img}
@@ -286,12 +289,15 @@ export default function LandingPages() {
                     draggable={false}
                   />
                 </div>
+
+                {/* Detail & Button */}
                 <div className="p-3 pb-4 pt-2">
                   <div className="text-xs font-bold mb-1 uppercase text-gray-500">
                     {m.brand} {m.name}{" "}
                     <span className="text-xs font-normal">{m.tahun}</span>
                   </div>
                   <h3 className="font-extrabold text-lg mb-1">{m.name}</h3>
+
                   <div className="flex items-center gap-2 text-gray-700 mb-2 flex-wrap">
                     <span className="bg-blue-100 text-blue-800 text-xs rounded-full px-2 py-0.5">
                       {m.type}
@@ -317,20 +323,34 @@ export default function LandingPages() {
                       )}
                     </div>
                   </div>
+
+                  {/* Rating & Fasilitas */}
                   <div className="flex items-center gap-1 text-yellow-500 mb-2">
                     {[...Array(5)].map((_, j) => (
                       <FaStar key={j} />
                     ))}
                   </div>
-                  <div className="flex justify-around text-xs text-gray-700">
+                  <div className="flex justify-around text-xs text-gray-700 mb-3">
                     <span>🪖 2x Helm</span>
                     <span>🧥 2x Jas Hujan</span>
                     <span>📱 Holder HP</span>
                   </div>
+
+                  {/* ✅ Tombol Sewa Motor */}
+                  <button
+                    onClick={() => {
+                      alert("Untuk memesan, silakan login terlebih dahulu.");
+                      navigate("/login");
+                    }}
+                    className="w-full bg-blue-700 hover:bg-blue-800 text-white text-sm font-semibold py-2 rounded-full transition"
+                  >
+                    Sewa Motor
+                  </button>
                 </div>
               </motion.div>
             ))}
           </div>
+
           {/* Hide scrollbar */}
           <style jsx>{`
             .scrollbar-hide {
