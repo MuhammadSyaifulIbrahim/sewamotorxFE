@@ -315,14 +315,13 @@ export default function KelolaPesanan() {
                       </td>
                       <td className="px-2 sm:px-4 py-3">
                         <select
-                          className={`px-2 py-1 rounded-full text-xs font-bold border ${
+                          className={`w-full px-3 py-2 rounded-full text-sm sm:text-xs font-bold border appearance-none relative z-10 ${
                             item.status_pesanan ===
                             "Selesai Pengambilan Motor dari Tempat Customer"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-yellow-50 text-yellow-700"
+                              ? "bg-green-100 text-green-700 border-green-400"
+                              : "bg-yellow-50 text-yellow-700 border-yellow-400"
                           }`}
                           value={item.status_pesanan || ""}
-                          style={{ minWidth: 160 }}
                           onChange={(e) =>
                             handleStatusPesanan(item.id, e.target.value)
                           }
@@ -334,6 +333,7 @@ export default function KelolaPesanan() {
                             </option>
                           ))}
                         </select>
+
                         {statusLoading[item.id] && (
                           <span className="ml-2 text-blue-600 animate-pulse">
                             updating...

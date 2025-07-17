@@ -366,17 +366,24 @@ export default function LandingPages() {
       </section>
 
       {/* WhatsApp Floating */}
-      <motion.a
+      <motion.div
         initial={{ scale: 1 }}
         animate={{ scale: [1, 1.12, 1] }}
         transition={{ repeat: Infinity, duration: 1.4 }}
-        href="https://wa.me/6285776828467"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="fixed bottom-5 right-5 z-50 bg-green-500 hover:bg-green-600 text-white p-4 rounded-full shadow-xl transition"
+        className="fixed bottom-16 right-5 z-50 flex flex-col items-center space-y-1"
       >
-        <BsWhatsapp size={28} />
-      </motion.a>
+        <span className="text-sm font-semibold text-green-700 select-none cursor-default flex items-center gap-1">
+          Number CS <span className="text-lg">⬇️</span>
+        </span>
+        <a
+          href="https://wa.me/6285776828467"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bg-green-500 hover:bg-green-600 text-white p-4 rounded-full shadow-xl transition"
+        >
+          <BsWhatsapp size={28} />
+        </a>
+      </motion.div>
 
       {/* Testimoni */}
       <section className="py-16 sm:py-20 px-3 sm:px-6 bg-gradient-to-br from-yellow-100 via-blue-50 to-white">

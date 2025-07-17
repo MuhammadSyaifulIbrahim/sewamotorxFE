@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import LogoNoBG from "../../assets/LogoNoBG.png";
+import { BsWhatsapp } from "react-icons/bs";
 
 function HeaderResponsive({ navigate }) {
   const [open, setOpen] = useState(false);
@@ -349,6 +350,29 @@ export default function HistoryUser() {
           </div>
         )}
       </div>
+
+      {/* WhatsApp Floating */}
+      <motion.div
+        initial={{ scale: 1 }}
+        animate={{ scale: [1, 1.12, 1] }}
+        transition={{ repeat: Infinity, duration: 1.4 }}
+        className="fixed bottom-20 right-5 z-50 flex flex-col items-center space-y-1"
+      >
+        <span className="text-sm font-semibold text-green-700 select-none cursor-default flex items-center gap-1">
+          Nomor CS <span className="text-lg">⬇️</span>
+        </span>
+        <a
+          href={`https://wa.me/6285776828467?text=${encodeURIComponent(
+            "Halo! saya butuh bantuan terkait pesanan saya, apakah bisa dibantu?"
+          )}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bg-green-500 hover:bg-green-600 text-white p-4 rounded-full shadow-xl transition"
+        >
+          <BsWhatsapp size={28} />
+        </a>
+      </motion.div>
+
       {/* Footer */}
       <footer className="bg-blue-900 text-white py-12 sm:py-16 px-3 sm:px-6">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">

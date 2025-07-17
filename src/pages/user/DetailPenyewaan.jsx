@@ -10,6 +10,7 @@ import {
   Timer,
   XCircle,
 } from "lucide-react";
+import { BsWhatsapp } from "react-icons/bs";
 
 export default function DetailPenyewaan() {
   const { id } = useParams();
@@ -367,6 +368,24 @@ export default function DetailPenyewaan() {
                   <span className="font-semibold">Pembayaran:</span>{" "}
                   {penyewaan.metode_pembayaran?.toUpperCase() || "-"}
                 </div>
+
+                {/* Tambahan tombol WhatsApp di bawah pembayaran */}
+                <div className="mt-4">
+                  <h3 className="text-base font-semibold text-indigo-700 mb-2">
+                    More Information by Whatsapp
+                  </h3>
+                  <a
+                    href={`https://wa.me/6285776828467?text=${encodeURIComponent(
+                      "Halo! saya butuh bantuan terkait pesanan saya, apakah bisa dibantu?"
+                    )}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white font-bold px-6 py-2 rounded-full transition text-base shadow"
+                  >
+                    <BsWhatsapp className="w-5 h-5" />
+                    Whatsapp
+                  </a>
+                </div>
               </div>
             </div>
             {/* Dokumen KTP & SIM */}
@@ -443,6 +462,29 @@ export default function DetailPenyewaan() {
           </motion.div>
         </div>
       </div>
+
+      {/* WhatsApp Floating */}
+      <motion.div
+        initial={{ scale: 1 }}
+        animate={{ scale: [1, 1.12, 1] }}
+        transition={{ repeat: Infinity, duration: 1.4 }}
+        className="fixed bottom-20 right-5 z-50 flex flex-col items-center space-y-1"
+      >
+        <span className="text-sm font-semibold text-green-700 select-none cursor-default flex items-center gap-1">
+          Nomor CS <span className="text-lg">⬇️</span>
+        </span>
+        <a
+          href={`https://wa.me/6285776828467?text=${encodeURIComponent(
+            "Halo! saya butuh bantuan terkait pesanan saya, apakah bisa dibantu?"
+          )}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="bg-green-500 hover:bg-green-600 text-white p-4 rounded-full shadow-xl transition"
+        >
+          <BsWhatsapp size={28} />
+        </a>
+      </motion.div>
+
       {/* Footer */}
       <footer className="bg-blue-900 text-white py-12 sm:py-16 px-3 sm:px-6">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
