@@ -105,6 +105,47 @@ export default function DetailPenyewaan() {
     );
   };
 
+  // BADGE UNTUK STATUS PESANAN/TRACKING
+  const badgeStatusPesanan = (status_pesanan) => {
+    let bg, tx;
+    switch (status_pesanan) {
+      case "Sedang Dikemas":
+        bg = "bg-yellow-100";
+        tx = "text-yellow-800";
+        break;
+      case "Segera Ambil di Showroom":
+        bg = "bg-purple-100";
+        tx = "text-purple-800";
+        break;
+      case "Dikirim":
+        bg = "bg-blue-100";
+        tx = "text-blue-800";
+        break;
+      case "Telah Sampai di Tempat Customer":
+        bg = "bg-green-100";
+        tx = "text-green-800";
+        break;
+      case "Proses Pengambilan Motor Sewa di Tempat Customer":
+        bg = "bg-orange-100";
+        tx = "text-orange-800";
+        break;
+      case "Selesai Pengambilan Motor dari Tempat Customer":
+        bg = "bg-gray-100";
+        tx = "text-gray-800";
+        break;
+      default:
+        bg = "bg-gray-50";
+        tx = "text-gray-500";
+    }
+    return (
+      <span
+        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold shadow ${bg} ${tx}`}
+      >
+        {status_pesanan}
+      </span>
+    );
+  };
+
   // Modal preview animasi
   const ModalImagePreview = ({ src, onClose }) => (
     <AnimatePresence>
@@ -229,6 +270,15 @@ export default function DetailPenyewaan() {
                     {Number(penyewaan.harga_total).toLocaleString("id-ID")}
                   </span>
                 </div>
+
+                {/* STATUS PESANAN/TRACKING */}
+                <div className="my-3">
+                  <span className="font-semibold text-gray-700 block mb-1">
+                    Status Pesanan:
+                  </span>
+                  {badgeStatusPesanan(penyewaan.status_pesanan)}
+                </div>
+
                 <div className="font-bold text-lg text-indigo-700 mb-1 flex items-center gap-2">
                   <span>{penyewaan.kendaraan?.nama}</span>
                   <span className="ml-1 font-normal text-xs text-gray-400">

@@ -18,7 +18,6 @@ import KelolaProduk from "./pages/admin/KelolaProduk";
 import KelolaPesanan from "./pages/admin/KelolaPesanan";
 import KelolaUser from "./pages/admin/KelolaUser";
 import AdminLogPage from "./pages/admin/AdminLogPage";
-import PengirimanMotor from "./pages/admin/PengirimanMotor";
 import TrackingPage from "./pages/admin/TrackingPage"; // ✅ Tambah ini
 
 // ROUTE GUARDS
@@ -73,14 +72,6 @@ export default function App() {
         element={
           <AdminRoute>
             <TrackingPage />
-          </AdminRoute>
-        }
-      />
-      <Route
-        path="/admin/pengiriman"
-        element={
-          <AdminRoute>
-            <PengirimanMotor />
           </AdminRoute>
         }
       />

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import API from "../../api/axios";
 import AdminLayout from "../../layouts/AdminLayout";
 import { FiActivity } from "react-icons/fi";
 
@@ -10,12 +10,13 @@ export default function AdminLogPage() {
   const fetchLogs = async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await axios.get("http://localhost:3001/activity-logs", {
+      const res = await API.get("/activity-logs", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setLogs(res.data);
+      // Cek apakah hasil res.data adalah array, jika tidak, fallback []
+      setLogs(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-      // Error silent
+      setLogs([]); // Supaya tetap array, tidak error map
     } finally {
       setLoading(false);
     }
@@ -23,6 +24,7 @@ export default function AdminLogPage() {
 
   useEffect(() => {
     fetchLogs();
+    // eslint-disable-next-line
   }, []);
 
   return (
@@ -78,7 +80,7 @@ export default function AdminLogPage() {
                 </tr>
               </thead>
               <tbody>
-                {logs.length === 0 ? (
+                {Array.isArray(logs) && logs.length === 0 ? (
                   <tr>
                     <td
                       colSpan="4"
@@ -88,7 +90,7 @@ export default function AdminLogPage() {
                     </td>
                   </tr>
                 ) : (
-                  logs.map((log) => (
+                  (logs || []).map((log) => (
                     <tr
                       key={log.id}
                       className="border-b hover:bg-blue-50 transition"

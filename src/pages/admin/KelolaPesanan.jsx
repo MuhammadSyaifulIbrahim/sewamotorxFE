@@ -3,6 +3,15 @@ import API from "../../api/axios";
 import AdminLayout from "../../layouts/AdminLayout";
 import { FiClipboard, FiEye, FiTrash2, FiCheckCircle } from "react-icons/fi";
 
+const DAFTAR_STATUS_PESANAN = [
+  "Sedang Dikemas",
+  "Segera Ambil di Showroom",
+  "Dikirim",
+  "Telah Sampai di Tempat Customer",
+  "Proses Pengambilan Motor Sewa di Tempat Customer",
+  "Selesai Pengambilan Motor dari Tempat Customer",
+];
+
 export default function KelolaPesanan() {
   const [rows, setRows] = useState([]);
   const [err, setErr] = useState("");
@@ -10,6 +19,7 @@ export default function KelolaPesanan() {
   const [detail, setDetail] = useState(null);
   const [editing, setEditing] = useState(null);
   const [jamData, setJamData] = useState({});
+  const [statusLoading, setStatusLoading] = useState({});
 
   const rupiah = (n) => (n ? `Rp${Number(n).toLocaleString("id-ID")}` : "–");
   const tanggal = (d) =>
@@ -64,14 +74,12 @@ export default function KelolaPesanan() {
           responseType: "blob",
         }
       );
-      // Get filename from response header
       const disposition = response.headers["content-disposition"];
       let filename = "export." + (type === "excel" ? "xlsx" : "pdf");
       if (disposition) {
         const match = disposition.match(/filename="?([^"]+)"?/);
         if (match) filename = match[1];
       }
-      // Download file
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement("a");
       link.href = url;
@@ -140,6 +148,23 @@ export default function KelolaPesanan() {
     } catch (error) {
       alert("Terjadi kesalahan saat menyelesaikan pesanan.");
     }
+  };
+
+  const handleStatusPesanan = async (id, statusBaru) => {
+    if (!window.confirm(`Ubah status pesanan menjadi "${statusBaru}"?`)) return;
+    setStatusLoading((prev) => ({ ...prev, [id]: true }));
+    try {
+      const token = localStorage.getItem("token");
+      await API.patch(
+        `/penyewaan/${id}/status`,
+        { status_pesanan: statusBaru },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      fetchData();
+    } catch (err) {
+      alert("Gagal update status pesanan.");
+    }
+    setStatusLoading((prev) => ({ ...prev, [id]: false }));
   };
 
   useEffect(() => {
@@ -231,7 +256,7 @@ export default function KelolaPesanan() {
               Tabel Pesanan Aktif
             </h2>
           </div>
-          <table className="w-full text-xs sm:text-sm text-center min-w-[680px]">
+          <table className="w-full text-xs sm:text-sm text-center min-w-[860px]">
             <thead className="bg-indigo-50">
               <tr>
                 <th className="px-2 sm:px-4 py-3">Nama Penyewa</th>
@@ -241,6 +266,7 @@ export default function KelolaPesanan() {
                 <th className="px-2 sm:px-4 py-3">Durasi</th>
                 <th className="px-2 sm:px-4 py-3">Total Biaya</th>
                 <th className="px-2 sm:px-4 py-3">Status</th>
+                <th className="px-2 sm:px-4 py-3">Status Pesanan</th>
                 <th className="px-2 sm:px-4 py-3">Aksi</th>
                 <th className="px-2 sm:px-4 py-3">Selesaikan</th>
               </tr>
@@ -248,7 +274,7 @@ export default function KelolaPesanan() {
             <tbody>
               {rowsAktif.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="py-8 text-gray-400">
+                  <td colSpan={10} className="py-8 text-gray-400">
                     Tidak ada data aktif.
                   </td>
                 </tr>
@@ -286,6 +312,33 @@ export default function KelolaPesanan() {
                         >
                           {statusLabel}
                         </span>
+                      </td>
+                      <td className="px-2 sm:px-4 py-3">
+                        <select
+                          className={`px-2 py-1 rounded-full text-xs font-bold border ${
+                            item.status_pesanan ===
+                            "Selesai Pengambilan Motor dari Tempat Customer"
+                              ? "bg-green-100 text-green-700"
+                              : "bg-yellow-50 text-yellow-700"
+                          }`}
+                          value={item.status_pesanan || ""}
+                          style={{ minWidth: 160 }}
+                          onChange={(e) =>
+                            handleStatusPesanan(item.id, e.target.value)
+                          }
+                          disabled={!!statusLoading[item.id]}
+                        >
+                          {DAFTAR_STATUS_PESANAN.map((status) => (
+                            <option key={status} value={status}>
+                              {status}
+                            </option>
+                          ))}
+                        </select>
+                        {statusLoading[item.id] && (
+                          <span className="ml-2 text-blue-600 animate-pulse">
+                            updating...
+                          </span>
+                        )}
                       </td>
                       <td className="px-2 sm:px-4 py-3">
                         <div className="flex justify-center gap-2 sm:gap-4 text-lg">

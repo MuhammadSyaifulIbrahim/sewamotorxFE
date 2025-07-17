@@ -352,15 +352,16 @@ export default function LandingPages() {
           </div>
 
           {/* Hide scrollbar */}
-          <style jsx>{`
-            .scrollbar-hide {
-              -ms-overflow-style: none;
-              scrollbar-width: none;
-            }
-            .scrollbar-hide::-webkit-scrollbar {
-              display: none;
-            }
-          `}</style>
+          {/* Hide scrollbar */}
+          <style>{`
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+`}</style>
         </div>
       </section>
 

@@ -27,7 +27,6 @@ export default function AdminLayout({ children }) {
     { to: "/admin/produk", icon: <FiBox />, label: "Kelola Produk" },
     { to: "/admin/pesanan", icon: <FiClipboard />, label: "Kelola Pesanan" },
     { to: "/admin/user", icon: <FiUsers />, label: "Kelola User" },
-    { to: "/admin/pengiriman", icon: <FiTruck />, label: "Pengiriman Motor" },
     { to: "/admin/tracking", icon: <FiMap />, label: "Tracking Kendaraan" }, // ✅ dipindah ke atas
     {
       to: "/admin/log-aktivitas",

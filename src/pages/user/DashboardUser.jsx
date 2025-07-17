@@ -3,20 +3,19 @@ import { useNavigate } from "react-router-dom";
 import { History, LogOut } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import API from "../../api/axios";
-import calculateDynamicPrice from "../../utils/calculateDynamicPrice";
 import LogoNoBG from "../../assets/LogoNoBG.png";
 import Banner from "../../assets/Motor.gif";
+import { getDistanceGoogle } from "../../utils/getDistanceGoogle";
 
-// Hero image dan alamat showroom
 const HERO_IMG = Banner;
 const SHOWROOM_ADDRESS =
   "Jl. Kemang Utara VII G No.2, RT 001/ RW04, Jakarta Selatan";
 
-// Tanggal default
+const getOngkir = (km) => (km ? Math.ceil(km) * 3000 : 0);
 const getDefaultDatetimeLocal = () => {
   const now = new Date();
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
-  return now.toISOString().slice(0, 10); // YYYY-MM-DD
+  return now.toISOString().slice(0, 10);
 };
 
 export default function DashboardUser() {
@@ -26,6 +25,16 @@ export default function DashboardUser() {
   useEffect(() => {
     if (!token) navigate("/login");
   }, [token, navigate]);
+
+  // Antar/Jemput
+  const [pakaiAntar, setPakaiAntar] = useState(false);
+  const [pakaiJemput, setPakaiJemput] = useState(false);
+  const [jarakAntar, setJarakAntar] = useState(null);
+  const [jarakJemput, setJarakJemput] = useState(null);
+  const [loadingJarakAntar, setLoadingJarakAntar] = useState(false);
+  const [loadingJarakJemput, setLoadingJarakJemput] = useState(false);
+  const [errorJarakAntar, setErrorJarakAntar] = useState("");
+  const [errorJarakJemput, setErrorJarakJemput] = useState("");
 
   const [formData, setFormData] = useState({
     nama_penyewa: "",
@@ -52,6 +61,25 @@ export default function DashboardUser() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      lokasi_pengambilan: pakaiAntar ? "Diantar" : "Showroom",
+      alamat_pengambilan: "",
+    }));
+    setJarakAntar(null);
+    setErrorJarakAntar("");
+  }, [pakaiAntar]);
+  useEffect(() => {
+    setFormData((prev) => ({
+      ...prev,
+      lokasi_pengembalian: pakaiJemput ? "Diambil" : "Showroom",
+      alamat_pengembalian: "",
+    }));
+    setJarakJemput(null);
+    setErrorJarakJemput("");
+  }, [pakaiJemput]);
+
+  useEffect(() => {
     const fetchKendaraan = async () => {
       setLoading(true);
       try {
@@ -70,14 +98,26 @@ export default function DashboardUser() {
     if (selectedMotor) setSelectedMotor((prev) => ({ ...prev }));
   }, [formData.durasi_penyewaan]);
 
+  // Validasi alamat: tidak boleh koordinat GPS
+  const isCoord = (str) => /^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/.test(str.trim());
+
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     setFormData((prev) => ({
       ...prev,
       [name]: files ? files[0] : value,
     }));
+    if (name === "alamat_pengambilan") {
+      setJarakAntar(null);
+      setErrorJarakAntar("");
+    }
+    if (name === "alamat_pengembalian") {
+      setJarakJemput(null);
+      setErrorJarakJemput("");
+    }
   };
 
+  // Kalkulasi harga total breakdown
   const calculateTotalPriceWithBreakdown = () => {
     if (!selectedMotor?.harga_sewa || !formData.durasi_penyewaan) {
       return {
@@ -86,6 +126,8 @@ export default function DashboardUser() {
         hargaSetelahDiskon: 0,
         breakdown: [],
         durasi: 0,
+        biayaAntar: 0,
+        biayaJemput: 0,
       };
     }
     const durasi = Number(formData.durasi_penyewaan);
@@ -119,15 +161,27 @@ export default function DashboardUser() {
     );
     const isWeekend = [0, 6].includes(pickup.getDay());
     if (isWeekend) {
-      total += 25000;
-      breakdown.push("Kenaikan Harga Weekend = +Rp 25.000");
+      total += 15000;
+      breakdown.push("Kenaikan Harga Weekend = +Rp 15.000");
     }
+    // Tambah ongkir
+    const biayaAntar = getOngkir(jarakAntar);
+    const biayaJemput = getOngkir(jarakJemput);
+    if (biayaAntar > 0)
+      breakdown.push(`Biaya Antar = +Rp ${biayaAntar.toLocaleString("id-ID")}`);
+    if (biayaJemput > 0)
+      breakdown.push(
+        `Biaya Jemput = +Rp ${biayaJemput.toLocaleString("id-ID")}`
+      );
+    total += biayaAntar + biayaJemput;
     return {
       total: Math.round(total),
       hargaAwal,
       hargaSetelahDiskon,
       breakdown,
       durasi,
+      biayaAntar,
+      biayaJemput,
     };
   };
 
@@ -153,11 +207,43 @@ export default function DashboardUser() {
       return alert("Mohon isi alamat pengambilan.");
     }
     if (
+      formData.lokasi_pengambilan === "Diantar" &&
+      (!jarakAntar || errorJarakAntar)
+    ) {
+      setLoading(false);
+      return alert(
+        "Mohon klik 'Cek Jarak & Ongkir' dan pastikan jarak ditemukan."
+      );
+    }
+    if (
+      formData.lokasi_pengambilan === "Diantar" &&
+      isCoord(formData.alamat_pengambilan)
+    ) {
+      setLoading(false);
+      return alert("Mohon masukkan alamat lengkap, bukan koordinat GPS.");
+    }
+    if (
       formData.lokasi_pengembalian === "Diambil" &&
       !formData.alamat_pengembalian.trim()
     ) {
       setLoading(false);
       return alert("Mohon isi alamat pengembalian.");
+    }
+    if (
+      formData.lokasi_pengembalian === "Diambil" &&
+      (!jarakJemput || errorJarakJemput)
+    ) {
+      setLoading(false);
+      return alert(
+        "Mohon klik 'Cek Jarak & Ongkir' dan pastikan jarak ditemukan."
+      );
+    }
+    if (
+      formData.lokasi_pengembalian === "Diambil" &&
+      isCoord(formData.alamat_pengembalian)
+    ) {
+      setLoading(false);
+      return alert("Mohon masukkan alamat lengkap, bukan koordinat GPS.");
     }
 
     const jadwalStr = `${formData.tanggal_booking}T${formData.jam_booking}:${formData.menit_booking}`;
@@ -191,6 +277,8 @@ export default function DashboardUser() {
     data.append("keterangan", formData.keterangan);
     data.append("foto_ktp", formData.foto_ktp);
     data.append("foto_sim", formData.foto_sim);
+    data.append("ongkir_antar", getOngkir(jarakAntar));
+    data.append("ongkir_jemput", getOngkir(jarakJemput));
 
     try {
       const res = await API.post("/penyewaan", data, {
@@ -229,7 +317,6 @@ export default function DashboardUser() {
     );
   };
 
-  // ------ Bobble Style Card Utility ------
   const cardVariants = {
     initial: { scale: 1, y: 0, boxShadow: "0 2px 16px 0 rgba(75,80,152,.07)" },
     hover: {
@@ -238,7 +325,6 @@ export default function DashboardUser() {
       boxShadow: "0 8px 36px 0 rgba(74,105,255,.16)",
     },
   };
-  // ----------------------------------------
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f3f8ff] via-white to-[#fff9ec] font-sans">
@@ -251,7 +337,7 @@ export default function DashboardUser() {
         </div>
       )}
 
-      {/* Header Responsive */}
+      {/* Header */}
       <header className="fixed top-0 z-50 w-full">
         <nav className="max-w-7xl mx-auto mt-3 sm:mt-4 rounded-full bg-white/90 shadow-lg px-2 sm:px-6 py-2 sm:py-3 flex flex-col sm:flex-row gap-3 sm:gap-0 justify-between items-center border border-blue-100 backdrop-blur-lg">
           <div
@@ -288,7 +374,6 @@ export default function DashboardUser() {
               Logout
             </button>
           </div>
-
           {/* Mobile only */}
           <div className="flex sm:hidden">
             <MobileNavbar navigate={navigate} />
@@ -367,7 +452,7 @@ export default function DashboardUser() {
         </div>
       </div>
 
-      {/* List Motor Bobbble Style */}
+      {/* List Motor */}
       <section
         id="list-motor"
         className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 px-4 pb-16"
@@ -521,7 +606,7 @@ export default function DashboardUser() {
                 🚦 Form Pemesanan – {selectedMotor.nama}
               </h2>
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* Form fields yang sama seperti sebelumnya */}
+                {/* --- FORM FIELD STANDARD --- */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -537,7 +622,6 @@ export default function DashboardUser() {
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Nomor Telepon *
@@ -569,7 +653,6 @@ export default function DashboardUser() {
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Jam Booking *
@@ -588,7 +671,6 @@ export default function DashboardUser() {
                           </option>
                         ))}
                       </select>
-
                       <select
                         name="menit_booking"
                         value={formData.menit_booking}
@@ -626,19 +708,32 @@ export default function DashboardUser() {
                   </select>
                 </div>
 
-                {/* Lokasi Pengambilan */}
+                {/* --- LOKASI PENGAMBILAN --- */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Lokasi Pengambilan *
                   </label>
+                  <div className="mb-2 flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="pakaiAntar"
+                      checked={pakaiAntar}
+                      onChange={(e) => setPakaiAntar(e.target.checked)}
+                      className="accent-indigo-600"
+                    />
+                    <label htmlFor="pakaiAntar" className="text-sm select-none">
+                      Diantar ke Lokasi Kamu
+                    </label>
+                  </div>
                   <div className="space-y-3">
                     <label className="flex items-start space-x-3">
                       <input
                         type="radio"
                         name="lokasi_pengambilan"
-                        value="Diambil"
-                        checked={formData.lokasi_pengambilan === "Diambil"}
+                        value="Showroom"
+                        checked={formData.lokasi_pengambilan === "Showroom"}
                         onChange={handleChange}
+                        disabled={pakaiAntar}
                         className="mt-1"
                       />
                       <div className="flex-1">
@@ -655,7 +750,6 @@ export default function DashboardUser() {
                         </button>
                       </div>
                     </label>
-
                     <label className="flex items-start space-x-3">
                       <input
                         type="radio"
@@ -663,6 +757,7 @@ export default function DashboardUser() {
                         value="Diantar"
                         checked={formData.lokasi_pengambilan === "Diantar"}
                         onChange={handleChange}
+                        disabled={!pakaiAntar}
                         className="mt-1"
                       />
                       <div className="flex-1">
@@ -674,32 +769,104 @@ export default function DashboardUser() {
                           Kelurahan, dan Kode Pos.
                         </p>
                         <div className="text-xs text-orange-600 font-semibold mt-1">
-                          *Harga akan dihitung oleh admin
+                          *Harga antar: 1 km = Rp 5.000
                         </div>
+                        {formData.lokasi_pengambilan === "Diantar" && (
+                          <div className="mt-3">
+                            <textarea
+                              name="alamat_pengambilan"
+                              value={formData.alamat_pengambilan}
+                              onChange={handleChange}
+                              placeholder="Masukkan alamat lengkap pengantaran..."
+                              rows={2}
+                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                              required={pakaiAntar}
+                            />
+                            <button
+                              type="button"
+                              className="mt-2 px-4 py-2 bg-blue-100 rounded text-blue-700 font-bold text-xs hover:bg-blue-200"
+                              onClick={async () => {
+                                setLoadingJarakAntar(true);
+                                setErrorJarakAntar("");
+                                setJarakAntar(null);
+                                if (
+                                  !formData.alamat_pengambilan.trim() ||
+                                  isCoord(formData.alamat_pengambilan)
+                                ) {
+                                  setErrorJarakAntar(
+                                    "Isi alamat lengkap, bukan koordinat GPS."
+                                  );
+                                  setLoadingJarakAntar(false);
+                                  return;
+                                }
+                                try {
+                                  const jarak = await getDistanceGoogle(
+                                    SHOWROOM_ADDRESS,
+                                    formData.alamat_pengambilan
+                                  );
+                                  if (jarak) setJarakAntar(jarak);
+                                  else
+                                    setErrorJarakAntar(
+                                      "Jarak tidak ditemukan, cek alamat lagi."
+                                    );
+                                } catch (err) {
+                                  setErrorJarakAntar(
+                                    err?.response?.data?.message ||
+                                      "Gagal cek jarak: pastikan alamat benar."
+                                  );
+                                  setJarakAntar(null);
+                                }
+                                setLoadingJarakAntar(false);
+                              }}
+                            >
+                              {loadingJarakAntar
+                                ? "Menghitung..."
+                                : "Cek Jarak & Ongkir via Maps"}
+                            </button>
+                            {jarakAntar && (
+                              <div className="mt-2 text-xs">
+                                Jarak: <b>{jarakAntar} km</b> <br />
+                                Biaya Antar:{" "}
+                                <b>
+                                  Rp{" "}
+                                  {getOngkir(jarakAntar).toLocaleString(
+                                    "id-ID"
+                                  )}
+                                </b>
+                              </div>
+                            )}
+                            {errorJarakAntar && (
+                              <div className="mt-2 text-xs text-red-600">
+                                {errorJarakAntar}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </label>
                   </div>
-
-                  {formData.lokasi_pengambilan === "Diantar" && (
-                    <div className="mt-3">
-                      <textarea
-                        name="alamat_pengambilan"
-                        value={formData.alamat_pengambilan}
-                        onChange={handleChange}
-                        placeholder="Masukkan alamat lengkap untuk pengambilan..."
-                        rows={3}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                        required
-                      />
-                    </div>
-                  )}
                 </div>
 
-                {/* Lokasi Pengembalian */}
+                {/* --- LOKASI PENGEMBALIAN --- */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Lokasi Pengembalian *
                   </label>
+                  <div className="mb-2 flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      id="pakaiJemput"
+                      checked={pakaiJemput}
+                      onChange={(e) => setPakaiJemput(e.target.checked)}
+                      className="accent-indigo-600"
+                    />
+                    <label
+                      htmlFor="pakaiJemput"
+                      className="text-sm select-none"
+                    >
+                      Diambil ke Lokasi Kamu
+                    </label>
+                  </div>
                   <div className="space-y-3">
                     <label className="flex items-start space-x-3">
                       <input
@@ -708,6 +875,7 @@ export default function DashboardUser() {
                         value="Showroom"
                         checked={formData.lokasi_pengembalian === "Showroom"}
                         onChange={handleChange}
+                        disabled={pakaiJemput}
                         className="mt-1"
                       />
                       <div className="flex-1">
@@ -724,7 +892,6 @@ export default function DashboardUser() {
                         </button>
                       </div>
                     </label>
-
                     <label className="flex items-start space-x-3">
                       <input
                         type="radio"
@@ -732,6 +899,7 @@ export default function DashboardUser() {
                         value="Diambil"
                         checked={formData.lokasi_pengembalian === "Diambil"}
                         onChange={handleChange}
+                        disabled={!pakaiJemput}
                         className="mt-1"
                       />
                       <div className="flex-1">
@@ -743,25 +911,82 @@ export default function DashboardUser() {
                           Kelurahan, dan Kode Pos.
                         </p>
                         <div className="text-xs text-orange-600 font-semibold mt-1">
-                          *Harga akan dihitung oleh admin
+                          *Harga jemput: 1 km = Rp 5.000
                         </div>
+                        {formData.lokasi_pengembalian === "Diambil" && (
+                          <div className="mt-3">
+                            <textarea
+                              name="alamat_pengembalian"
+                              value={formData.alamat_pengembalian}
+                              onChange={handleChange}
+                              placeholder="Masukkan alamat lengkap penjemputan..."
+                              rows={2}
+                              className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                              required={pakaiJemput}
+                            />
+                            <button
+                              type="button"
+                              className="mt-2 px-4 py-2 bg-blue-100 rounded text-blue-700 font-bold text-xs hover:bg-blue-200"
+                              onClick={async () => {
+                                setLoadingJarakJemput(true);
+                                setErrorJarakJemput("");
+                                setJarakJemput(null);
+                                if (
+                                  !formData.alamat_pengembalian.trim() ||
+                                  isCoord(formData.alamat_pengembalian)
+                                ) {
+                                  setErrorJarakJemput(
+                                    "Isi alamat lengkap, bukan koordinat GPS."
+                                  );
+                                  setLoadingJarakJemput(false);
+                                  return;
+                                }
+                                try {
+                                  const jarak = await getDistanceGoogle(
+                                    SHOWROOM_ADDRESS,
+                                    formData.alamat_pengembalian
+                                  );
+                                  if (jarak) setJarakJemput(jarak);
+                                  else
+                                    setErrorJarakJemput(
+                                      "Jarak tidak ditemukan, cek alamat lagi."
+                                    );
+                                } catch (err) {
+                                  setErrorJarakJemput(
+                                    err?.response?.data?.message ||
+                                      "Gagal cek jarak: pastikan alamat benar."
+                                  );
+                                  setJarakJemput(null);
+                                }
+                                setLoadingJarakJemput(false);
+                              }}
+                            >
+                              {loadingJarakJemput
+                                ? "Menghitung..."
+                                : "Cek Jarak & Ongkir via Maps"}
+                            </button>
+                            {jarakJemput && (
+                              <div className="mt-2 text-xs">
+                                Jarak: <b>{jarakJemput} km</b> <br />
+                                Biaya Jemput:{" "}
+                                <b>
+                                  Rp{" "}
+                                  {getOngkir(jarakJemput).toLocaleString(
+                                    "id-ID"
+                                  )}
+                                </b>
+                              </div>
+                            )}
+                            {errorJarakJemput && (
+                              <div className="mt-2 text-xs text-red-600">
+                                {errorJarakJemput}
+                              </div>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </label>
                   </div>
-
-                  {formData.lokasi_pengembalian === "Diambil" && (
-                    <div className="mt-3">
-                      <textarea
-                        name="alamat_pengembalian"
-                        value={formData.alamat_pengembalian}
-                        onChange={handleChange}
-                        placeholder="Masukkan alamat lengkap untuk pengembalian..."
-                        rows={3}
-                        className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                        required
-                      />
-                    </div>
-                  )}
                 </div>
 
                 {/* Keterangan */}
@@ -794,7 +1019,6 @@ export default function DashboardUser() {
                       className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                     />
                   </div>
-
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Upload Foto SIM *
@@ -810,6 +1034,7 @@ export default function DashboardUser() {
                   </div>
                 </div>
 
+                {/* --- BREAKDOWN ESTIMASI --- */}
                 <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
                   <h3 className="text-base font-bold text-indigo-700 mb-2">
                     Estimasi Biaya Sewa
@@ -821,6 +1046,8 @@ export default function DashboardUser() {
                       total,
                       breakdown,
                       durasi,
+                      biayaAntar,
+                      biayaJemput,
                     } = calculateTotalPriceWithBreakdown();
                     return (
                       <>
@@ -837,10 +1064,31 @@ export default function DashboardUser() {
                           </span>
                         </div>
                         <div className="flex justify-between text-sm text-gray-700 mb-1">
-                          <span>Total ({durasi} hari):</span>
-                          <span className="font-bold text-indigo-600 text-base">
-                            Rp {total.toLocaleString("id-ID")}
+                          <span>Total Sewa ({durasi} hari):</span>
+                          <span>
+                            Rp{" "}
+                            {(hargaSetelahDiskon * durasi).toLocaleString(
+                              "id-ID"
+                            )}
                           </span>
+                        </div>
+                        {biayaAntar > 0 && (
+                          <div className="flex justify-between text-sm text-gray-700 mb-1">
+                            <span>Biaya Antar:</span>
+                            <span>Rp {biayaAntar.toLocaleString("id-ID")}</span>
+                          </div>
+                        )}
+                        {biayaJemput > 0 && (
+                          <div className="flex justify-between text-sm text-gray-700 mb-1">
+                            <span>Biaya Jemput:</span>
+                            <span>
+                              Rp {biayaJemput.toLocaleString("id-ID")}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex justify-between text-base font-bold text-indigo-700 mt-2">
+                          <span>Grand Total:</span>
+                          <span>Rp {total.toLocaleString("id-ID")}</span>
                         </div>
                         {breakdown.length > 0 && (
                           <div className="mt-3">
@@ -858,6 +1106,7 @@ export default function DashboardUser() {
                     );
                   })()}
                 </div>
+
                 <button
                   type="submit"
                   disabled={loading}
@@ -938,7 +1187,6 @@ export default function DashboardUser() {
 function MobileNavbar({ navigate }) {
   const [open, setOpen] = useState(false);
 
-  // Tutup menu saat resize ke desktop
   useEffect(() => {
     const handler = () => {
       if (window.innerWidth >= 640) setOpen(false);
@@ -949,7 +1197,6 @@ function MobileNavbar({ navigate }) {
 
   return (
     <>
-      {/* Hamburger Btn: hanya tampil di mobile */}
       <button
         className="sm:hidden flex flex-col justify-center items-center w-10 h-10 rounded-full border border-indigo-100 bg-indigo-50 hover:bg-indigo-200 transition focus:outline-none"
         onClick={() => setOpen((v) => !v)}
@@ -960,8 +1207,6 @@ function MobileNavbar({ navigate }) {
         <span className="block w-6 h-0.5 bg-indigo-600 rounded mb-1" />
         <span className="block w-6 h-0.5 bg-indigo-600 rounded" />
       </button>
-
-      {/* Drawer Mobile Menu */}
       <AnimatePresence>
         {open && (
           <motion.div

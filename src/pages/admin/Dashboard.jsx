@@ -6,7 +6,6 @@ import {
   FaUsers,
   FaClipboardList,
   FaMoneyBillWave,
-  FaShippingFast,
 } from "react-icons/fa";
 import { FiRefreshCw } from "react-icons/fi";
 import {
@@ -33,7 +32,7 @@ const shortMonth = (m) =>
     Agustus: "Agu",
     September: "Sep",
     Oktober: "Okt",
-    November: "Nov",
+    November: "Des",
     Desember: "Des",
   }[m] || m);
 
@@ -146,10 +145,6 @@ export default function AdminDashboard() {
       </AdminLayout>
     );
 
-  // Hitung total pendapatan: uang sewa + uang pengiriman
-  const totalPendapatanGabungan =
-    (stats.totalPendapatan || 0) + (stats.totalUangPengiriman || 0);
-
   return (
     <AdminLayout>
       {/* HEADER */}
@@ -167,7 +162,7 @@ export default function AdminDashboard() {
       </div>
 
       {/* CARD STATISTIK */}
-      <div className="w-full max-w-6xl mx-auto">
+      <div className="w-full max-w-5xl mx-auto">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 mb-10 md:mb-12">
           <StatCard
             Icon={FaMotorcycle}
@@ -194,31 +189,8 @@ export default function AdminDashboard() {
             Icon={FaMoneyBillWave}
             iconBg="bg-yellow-50"
             color="text-yellow-500"
-            label="Uang Sewa"
-            value={`Rp${(stats.totalPendapatan || 0).toLocaleString("id-ID")}`}
-          />
-          <StatCard
-            Icon={FaShippingFast}
-            iconBg="bg-cyan-50"
-            color="text-cyan-500"
-            label="Total Pengiriman"
-            value={stats.totalPengiriman || 0}
-          />
-          <StatCard
-            Icon={FaMoneyBillWave}
-            iconBg="bg-emerald-50"
-            color="text-emerald-600"
-            label="Uang Pengiriman"
-            value={`Rp${(stats.totalUangPengiriman || 0).toLocaleString(
-              "id-ID"
-            )}`}
-          />
-          <StatCard
-            Icon={FaMoneyBillWave}
-            iconBg="bg-orange-50"
-            color="text-orange-500"
             label="Total Pendapatan"
-            value={`Rp${totalPendapatanGabungan.toLocaleString("id-ID")}`}
+            value={`Rp${(stats.totalPendapatan || 0).toLocaleString("id-ID")}`}
           />
         </div>
       </div>
