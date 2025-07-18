@@ -1,33 +1,168 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { History, LogOut } from "lucide-react";
+import { History, LogOut, Bell } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import API from "../../api/axios";
 import LogoNoBG from "../../assets/LogoNoBG.png";
 import Banner from "../../assets/Motor.gif";
 import { getDistanceGoogle } from "../../utils/getDistanceGoogle";
 import { BsWhatsapp } from "react-icons/bs";
+import { io } from "socket.io-client";
 
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:3001";
 const HERO_IMG = Banner;
 const SHOWROOM_ADDRESS =
   "Jl. Kemang Utara VII G No.2, RT 001/ RW04, Jakarta Selatan";
 
-const getOngkir = (km) => (km ? Math.ceil(km) * 3000 : 0);
+const getOngkir = (km) => (km ? Math.ceil(km) * 5000 : 0);
 const getDefaultDatetimeLocal = () => {
   const now = new Date();
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
   return now.toISOString().slice(0, 10);
 };
 
+// -----------------
+// NOTIFIKASI DROPDOWN
+function NotifDropdown({ notifs, unreadCount, open, onOpen, onClickNotif }) {
+  return (
+    <div className="relative notif-dropdown">
+      <button
+        onClick={onOpen}
+        className="relative group p-2 rounded-full bg-white shadow-md hover:bg-blue-100 transition notif-bell"
+        title="Notifikasi"
+      >
+        <Bell size={28} className="text-blue-800" />
+        {unreadCount > 0 && (
+          <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full px-2 py-0.5 font-bold animate-bounce z-20">
+            {unreadCount}
+          </span>
+        )}
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ opacity: 0, y: -18, scale: 0.99 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -18, scale: 0.99 }}
+            transition={{ duration: 0.18 }}
+            className="absolute right-0 mt-3 w-[330px] max-w-[92vw] bg-white border border-blue-100 rounded-2xl shadow-2xl z-50 overflow-hidden"
+          >
+            <div className="px-5 py-3 border-b flex items-center gap-2 bg-blue-50">
+              <Bell className="text-blue-700" size={20} />
+              <span className="font-bold text-blue-900 text-base">
+                Notifikasi
+              </span>
+            </div>
+            <div className="max-h-80 overflow-y-auto">
+              {notifs.length === 0 && (
+                <div className="px-6 py-7 text-gray-400 text-center text-base">
+                  Tidak ada notifikasi
+                </div>
+              )}
+              {notifs.map((notif) => (
+                <button
+                  key={notif.id}
+                  onClick={() => onClickNotif(notif)}
+                  className={`flex text-left w-full gap-2 px-5 py-3 border-b last:border-0 hover:bg-blue-50 transition group ${
+                    notif.sudah_dibaca ? "opacity-80" : "bg-blue-50/30"
+                  }`}
+                  style={{ alignItems: "flex-start" }}
+                >
+                  <div className="mt-0.5">
+                    {notif.tipe === "success" ? (
+                      <span className="inline-block text-lg">💳</span>
+                    ) : notif.tipe === "warning" ? (
+                      <span className="inline-block text-lg">⚠️</span>
+                    ) : (
+                      <span className="inline-block text-lg">🛵</span>
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div
+                      className={`font-semibold text-[15px] leading-tight ${
+                        notif.tipe === "success"
+                          ? "text-blue-800"
+                          : notif.tipe === "warning"
+                          ? "text-yellow-700"
+                          : "text-pink-800"
+                      } group-hover:underline truncate`}
+                    >
+                      {notif.pesan}
+                    </div>
+                    <div className="text-xs text-gray-400 mt-1">
+                      {formatWIB(notif.createdAt)}
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// Utility tanggal (WIB)
+function formatWIB(dateStr) {
+  if (!dateStr) return "";
+  const d = new Date(dateStr);
+  return d
+    .toLocaleTimeString("id-ID", {
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+    .replace(".", ":");
+}
+
+// -----------------
+// DASHBOARD USER
 export default function DashboardUser() {
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
 
-  useEffect(() => {
-    if (!token) navigate("/login");
-  }, [token, navigate]);
+  // NOTIFIKASI
+  const [notifs, setNotifs] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const socketRef = useRef();
 
-  // Antar/Jemput
+  // PATCH: Reset unreadCount dan mark all read pas dropdown notif dibuka
+  useEffect(() => {
+    if (notifOpen && unreadCount > 0) {
+      setUnreadCount(0);
+      setNotifs((prev) => prev.map((n) => ({ ...n, sudah_dibaca: true })));
+      API.post("/notifikasi/mark-read-all", null, {
+        headers: { Authorization: `Bearer ${token}` },
+      }).catch(() => {});
+    }
+  }, [notifOpen]);
+
+  // PATCH: Close dropdown notif kalau klik di luar
+  useEffect(() => {
+    if (!notifOpen) return;
+    const handler = (e) => {
+      if (
+        !e.target.closest(".notif-dropdown") &&
+        !e.target.closest(".notif-bell")
+      ) {
+        setNotifOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [notifOpen]);
+
+  // List motor, state form dsb
+  const [kendaraanList, setKendaraanList] = useState([]);
+  const [selectedMotor, setSelectedMotor] = useState(null);
+  const [modalImage, setModalImage] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterHarga, setFilterHarga] = useState({ min: 0, max: Infinity });
+  const [filterTerlaris, setFilterTerlaris] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  // Form
   const [pakaiAntar, setPakaiAntar] = useState(false);
   const [pakaiJemput, setPakaiJemput] = useState(false);
   const [jarakAntar, setJarakAntar] = useState(null);
@@ -36,7 +171,6 @@ export default function DashboardUser() {
   const [loadingJarakJemput, setLoadingJarakJemput] = useState(false);
   const [errorJarakAntar, setErrorJarakAntar] = useState("");
   const [errorJarakJemput, setErrorJarakJemput] = useState("");
-
   const [formData, setFormData] = useState({
     nama_penyewa: "",
     nomor_telepon: "",
@@ -53,14 +187,69 @@ export default function DashboardUser() {
     foto_sim: null,
   });
 
-  const [kendaraanList, setKendaraanList] = useState([]);
-  const [selectedMotor, setSelectedMotor] = useState(null);
-  const [modalImage, setModalImage] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
-  const [filterHarga, setFilterHarga] = useState({ min: 0, max: Infinity });
-  const [filterTerlaris, setFilterTerlaris] = useState(false);
-  const [loading, setLoading] = useState(false);
+  // --- Notif fetcher + socket ---
+  useEffect(() => {
+    if (!token) return;
+    // GET initial notifikasi user
+    API.get("/notifikasi", {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((res) => {
+        setNotifs(res.data || []);
+        setUnreadCount((res.data || []).filter((n) => !n.sudah_dibaca).length);
+      })
+      .catch(() => {});
 
+    // SOCKET.IO
+    const socket = io(SOCKET_URL, {
+      auth: { token },
+      transports: ["websocket"],
+    });
+    socketRef.current = socket;
+
+    socket.on("notification:new", (notif) => {
+      setNotifs((prev) => [notif, ...prev]);
+      setUnreadCount((n) => n + 1);
+    });
+
+    // Realtime produk
+    socket.on("produk:created", (newMotor) => {
+      setKendaraanList((prev) => [newMotor, ...prev]);
+    });
+    socket.on("produk:updated", (updatedMotor) => {
+      setKendaraanList((prev) =>
+        prev.map((motor) =>
+          motor.id === updatedMotor.id ? updatedMotor : motor
+        )
+      );
+    });
+    socket.on("produk:deleted", (deletedId) => {
+      setKendaraanList((prev) =>
+        prev.filter((motor) => motor.id !== deletedId)
+      );
+    });
+
+    return () => socket.disconnect();
+  }, [token]);
+
+  // Klik notif
+  const handleNotifClick = (notif) => {
+    setNotifOpen(false);
+    // PATCH: Tidak perlu setUnreadCount lagi, sudah auto reset saat dropdown dibuka
+    API.post(`/notifikasi/${notif.id}/baca`, null, {
+      headers: { Authorization: `Bearer ${token}` },
+    }).catch(() => {});
+    if (notif.orderId)
+      navigate(`/dashboard/history?highlight=${notif.orderId}`);
+    else navigate("/dashboard/history");
+  };
+
+  // Redirect login jika tidak ada token
+  useEffect(() => {
+    if (!token) navigate("/login");
+  }, [token, navigate]);
+
+  // Reset lokasi dan jarak saat opsi antar/jemput berubah
   useEffect(() => {
     setFormData((prev) => ({
       ...prev,
@@ -80,45 +269,19 @@ export default function DashboardUser() {
     setErrorJarakJemput("");
   }, [pakaiJemput]);
 
+  // Fetch kendaraan saat mount
   useEffect(() => {
-    const fetchKendaraan = async () => {
-      setLoading(true);
-      try {
-        const res = await API.get("/kendaraan");
-        setKendaraanList(res.data);
-      } catch {
-        alert("Gagal memuat data kendaraan. Silakan refresh halaman.");
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchKendaraan();
+    setLoading(true);
+    API.get("/kendaraan")
+      .then((res) => setKendaraanList(res.data))
+      .catch(() =>
+        alert("Gagal memuat data kendaraan. Silakan refresh halaman.")
+      )
+      .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => {
-    if (selectedMotor) setSelectedMotor((prev) => ({ ...prev }));
-  }, [formData.durasi_penyewaan]);
-
-  // Validasi alamat: tidak boleh koordinat GPS
+  // ---- Kalkulasi harga breakdown ----
   const isCoord = (str) => /^-?\d+(\.\d+)?,-?\d+(\.\d+)?$/.test(str.trim());
-
-  const handleChange = (e) => {
-    const { name, value, files } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: files ? files[0] : value,
-    }));
-    if (name === "alamat_pengambilan") {
-      setJarakAntar(null);
-      setErrorJarakAntar("");
-    }
-    if (name === "alamat_pengembalian") {
-      setJarakJemput(null);
-      setErrorJarakJemput("");
-    }
-  };
-
-  // Kalkulasi harga total breakdown
   const calculateTotalPriceWithBreakdown = () => {
     if (!selectedMotor?.harga_sewa || !formData.durasi_penyewaan) {
       return {
@@ -165,7 +328,6 @@ export default function DashboardUser() {
       total += 15000;
       breakdown.push("Kenaikan Harga Weekend = +Rp 15.000");
     }
-    // Tambah ongkir
     const biayaAntar = getOngkir(jarakAntar);
     const biayaJemput = getOngkir(jarakJemput);
     if (biayaAntar > 0)
@@ -186,10 +348,25 @@ export default function DashboardUser() {
     };
   };
 
+  // Submit form penyewaan
+  const handleChange = (e) => {
+    const { name, value, files } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: files ? files[0] : value,
+    }));
+    if (name === "alamat_pengambilan") {
+      setJarakAntar(null);
+      setErrorJarakAntar("");
+    }
+    if (name === "alamat_pengembalian") {
+      setJarakJemput(null);
+      setErrorJarakJemput("");
+    }
+  };
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-
     if (!selectedMotor?.id) {
       setLoading(false);
       return alert(
@@ -246,7 +423,6 @@ export default function DashboardUser() {
       setLoading(false);
       return alert("Mohon masukkan alamat lengkap, bukan koordinat GPS.");
     }
-
     const jadwalStr = `${formData.tanggal_booking}T${formData.jam_booking}:${formData.menit_booking}`;
     const jadwalBookingDate = new Date(jadwalStr);
     const data = new FormData();
@@ -280,7 +456,6 @@ export default function DashboardUser() {
     data.append("foto_sim", formData.foto_sim);
     data.append("ongkir_antar", getOngkir(jarakAntar));
     data.append("ongkir_jemput", getOngkir(jarakJemput));
-
     try {
       const res = await API.post("/penyewaan", data, {
         headers: { Authorization: `Bearer ${token}` },
@@ -299,9 +474,10 @@ export default function DashboardUser() {
     }
   };
 
+  // ---- Filter kendaraan ----
   const filteredKendaraan = kendaraanList
     .filter((motor) =>
-      motor.nama.toLowerCase().includes(searchQuery.toLowerCase())
+      motor.nama?.toLowerCase().includes(searchQuery.toLowerCase())
     )
     .filter(
       (motor) =>
@@ -318,6 +494,7 @@ export default function DashboardUser() {
     );
   };
 
+  // ------ UI -------
   const cardVariants = {
     initial: { scale: 1, y: 0, boxShadow: "0 2px 16px 0 rgba(75,80,152,.07)" },
     hover: {
@@ -329,6 +506,7 @@ export default function DashboardUser() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f3f8ff] via-white to-[#fff9ec] font-sans">
+      {/* LOADING OVERLAY */}
       {loading && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded-2xl flex items-center gap-4 shadow-xl">
@@ -338,7 +516,7 @@ export default function DashboardUser() {
         </div>
       )}
 
-      {/* Header */}
+      {/* HEADER */}
       <header className="fixed top-0 z-50 w-full">
         <nav className="max-w-7xl mx-auto mt-3 sm:mt-4 rounded-full bg-white/90 shadow-lg px-2 sm:px-6 py-2 sm:py-3 flex flex-col sm:flex-row gap-3 sm:gap-0 justify-between items-center border border-blue-100 backdrop-blur-lg">
           <div
@@ -355,11 +533,18 @@ export default function DashboardUser() {
               MotoRent
             </span>
           </div>
-          {/* Desktop only */}
-          <div className="space-x-1 sm:space-x-2 gap-2 hidden sm:flex">
+          <div className="flex items-center gap-2">
+            {/* Notifikasi Dropdown */}
+            <NotifDropdown
+              notifs={notifs}
+              unreadCount={unreadCount}
+              open={notifOpen}
+              onOpen={() => setNotifOpen((o) => !o)}
+              onClickNotif={handleNotifClick}
+            />
             <button
               onClick={() => navigate("/dashboard/history")}
-              className="flex items-center gap-2 px-6 py-2 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold text-base shadow transition"
+              className="hidden sm:flex items-center gap-2 px-6 py-2 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold text-base shadow transition"
             >
               <History className="w-5 h-5" />
               Riwayat
@@ -369,20 +554,19 @@ export default function DashboardUser() {
                 localStorage.clear();
                 navigate("/");
               }}
-              className="flex items-center gap-2 px-6 py-2 rounded-full bg-gradient-to-r from-pink-400 to-red-500 text-white font-bold text-base shadow hover:opacity-90 transition"
+              className="hidden sm:flex items-center gap-2 px-6 py-2 rounded-full bg-gradient-to-r from-pink-400 to-red-500 text-white font-bold text-base shadow hover:opacity-90 transition"
             >
               <LogOut className="w-5 h-5" />
               Logout
             </button>
-          </div>
-          {/* Mobile only */}
-          <div className="flex sm:hidden">
-            <MobileNavbar navigate={navigate} />
+            <div className="flex sm:hidden">
+              <MobileNavbar navigate={navigate} />
+            </div>
           </div>
         </nav>
       </header>
 
-      {/* Hero Section */}
+      {/* HERO */}
       <section
         className="h-[48vh] sm:h-[60vh] bg-cover bg-center flex items-center justify-center text-white relative rounded-b-3xl shadow-lg mb-8"
         style={{ backgroundImage: `url(${HERO_IMG})` }}
@@ -414,7 +598,7 @@ export default function DashboardUser() {
         </div>
       </section>
 
-      {/* Filter Search */}
+      {/* FILTER SEARCH */}
       <div className="max-w-5xl mx-auto py-4 px-4">
         <input
           type="text"
@@ -453,7 +637,7 @@ export default function DashboardUser() {
         </div>
       </div>
 
-      {/* List Motor */}
+      {/* LIST MOTOR */}
       <section
         id="list-motor"
         className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 px-4 pb-16"
@@ -463,7 +647,6 @@ export default function DashboardUser() {
             Tidak ada motor yang cocok. Coba keyword atau filter lain!
           </div>
         )}
-
         {filteredKendaraan.map((motor) => (
           <motion.article
             key={motor.id}
@@ -550,7 +733,7 @@ export default function DashboardUser() {
         ))}
       </section>
 
-      {/* Modal Preview Gambar */}
+      {/* MODAL PREVIEW GAMBAR */}
       <AnimatePresence>
         {modalImage && (
           <motion.div
@@ -583,7 +766,7 @@ export default function DashboardUser() {
         )}
       </AnimatePresence>
 
-      {/* Modal Form Pemesanan */}
+      {/* MODAL FORM PEMESANAN */}
       <AnimatePresence>
         {selectedMotor && (
           <motion.div
@@ -607,7 +790,8 @@ export default function DashboardUser() {
                 🚦 Form Pemesanan – {selectedMotor.nama}
               </h2>
               <form onSubmit={handleSubmit} className="space-y-6">
-                {/* --- FORM FIELD STANDARD --- */}
+                {/* FORM FIELD */}
+                {/* Nama & Telp */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -638,8 +822,7 @@ export default function DashboardUser() {
                     />
                   </div>
                 </div>
-
-                {/* Tanggal dan Jam Booking */}
+                {/* Tanggal & Jam Booking */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -688,8 +871,7 @@ export default function DashboardUser() {
                     </div>
                   </div>
                 </div>
-
-                {/* Durasi Penyewaan */}
+                {/* Durasi */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Durasi Penyewaan (Hari) *
@@ -708,8 +890,7 @@ export default function DashboardUser() {
                     ))}
                   </select>
                 </div>
-
-                {/* --- LOKASI PENGAMBILAN --- */}
+                {/* Lokasi Pengambilan */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Lokasi Pengambilan *
@@ -847,8 +1028,7 @@ export default function DashboardUser() {
                     </label>
                   </div>
                 </div>
-
-                {/* --- LOKASI PENGEMBALIAN --- */}
+                {/* Lokasi Pengembalian */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Lokasi Pengembalian *
@@ -989,7 +1169,6 @@ export default function DashboardUser() {
                     </label>
                   </div>
                 </div>
-
                 {/* Keterangan */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1004,8 +1183,7 @@ export default function DashboardUser() {
                     className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   />
                 </div>
-
-                {/* Upload Documents */}
+                {/* Upload Dokumen */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1034,8 +1212,7 @@ export default function DashboardUser() {
                     />
                   </div>
                 </div>
-
-                {/* --- BREAKDOWN ESTIMASI --- */}
+                {/* Breakdown Estimasi */}
                 <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
                   <h3 className="text-base font-bold text-indigo-700 mb-2">
                     Estimasi Biaya Sewa
@@ -1107,7 +1284,6 @@ export default function DashboardUser() {
                     );
                   })()}
                 </div>
-
                 <button
                   type="submit"
                   disabled={loading}
@@ -1144,7 +1320,7 @@ export default function DashboardUser() {
         </a>
       </motion.div>
 
-      {/* Footer */}
+      {/* FOOTER */}
       <footer className="bg-blue-900 text-white py-12 sm:py-16 px-3 sm:px-6">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="md:col-span-2">
@@ -1206,7 +1382,7 @@ export default function DashboardUser() {
   );
 }
 
-// === Responsive Navbar Component (for mobile) ===
+// === MOBILE NAVBAR ===
 function MobileNavbar({ navigate }) {
   const [open, setOpen] = useState(false);
 

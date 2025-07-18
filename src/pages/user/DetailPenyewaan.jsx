@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import API from "../../api/axios";
 import { motion, AnimatePresence } from "framer-motion";
@@ -11,13 +11,18 @@ import {
   XCircle,
 } from "lucide-react";
 import { BsWhatsapp } from "react-icons/bs";
+import { io } from "socket.io-client";
+
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:3001";
 
 export default function DetailPenyewaan() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [penyewaan, setPenyewaan] = useState(null);
   const [modalImage, setModalImage] = useState(null);
+  const socketRef = useRef(null);
 
+  // Fetch detail penyewaan
   useEffect(() => {
     const fetchDetail = async () => {
       try {
@@ -35,6 +40,47 @@ export default function DetailPenyewaan() {
     fetchDetail();
   }, [id, navigate]);
 
+  // Setup socket connection & listeners
+  useEffect(() => {
+    if (!localStorage.getItem("token")) return;
+
+    const socket = io(SOCKET_URL, {
+      auth: { token: localStorage.getItem("token") },
+      transports: ["websocket"],
+    });
+    socketRef.current = socket;
+
+    // Listener update status pesanan (tracking)
+    socket.on("order:status_updated", (data) => {
+      if (data.id === Number(id)) {
+        setPenyewaan((prev) =>
+          prev ? { ...prev, status_pesanan: data.status_pesanan } : prev
+        );
+      }
+    });
+
+    // Listener update payment status
+    socket.on("order:payment_status", (data) => {
+      if (data.id === Number(id)) {
+        setPenyewaan((prev) =>
+          prev ? { ...prev, status: data.status } : prev
+        );
+      }
+    });
+
+    // Listener selesai penyewaan
+    socket.on("order:selesai", (data) => {
+      if (data.id === Number(id)) {
+        setPenyewaan((prev) => (prev ? { ...prev, status: "SELESAI" } : prev));
+      }
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [id]);
+
+  // Handle ESC to close modal image
   useEffect(() => {
     const closeOnEsc = (e) => {
       if (e.key === "Escape") setModalImage(null);
@@ -43,8 +89,8 @@ export default function DetailPenyewaan() {
     return () => window.removeEventListener("keydown", closeOnEsc);
   }, [modalImage]);
 
+  // Scroll ke tombol bayar jika menunggu pembayaran
   useEffect(() => {
-    // Jika menunggu pembayaran, scroll ke tombol pembayaran
     if (penyewaan?.status === "MENUNGGU_PEMBAYARAN") {
       setTimeout(() => {
         const bayarBtn = document.getElementById("bayar-sekarang");
@@ -90,6 +136,12 @@ export default function DetailPenyewaan() {
         label = status === "DIBATALKAN" ? "Dibatalkan" : "Gagal";
         icon = <XCircle className="w-4 h-4 mr-1" />;
         break;
+      case "SELESAI":
+        bg = "bg-blue-100";
+        tx = "text-blue-700";
+        label = "Selesai";
+        icon = <BadgeCheck className="w-4 h-4 mr-1" />;
+        break;
       default:
         bg = "bg-gray-100";
         tx = "text-gray-600";
@@ -106,7 +158,7 @@ export default function DetailPenyewaan() {
     );
   };
 
-  // BADGE UNTUK STATUS PESANAN/TRACKING
+  // Badge status pesanan/tracking
   const badgeStatusPesanan = (status_pesanan) => {
     let bg, tx;
     switch (status_pesanan) {
@@ -147,7 +199,7 @@ export default function DetailPenyewaan() {
     );
   };
 
-  // Modal preview animasi
+  // Modal image preview
   const ModalImagePreview = ({ src, onClose }) => (
     <AnimatePresence>
       <motion.div
@@ -369,7 +421,7 @@ export default function DetailPenyewaan() {
                   {penyewaan.metode_pembayaran?.toUpperCase() || "-"}
                 </div>
 
-                {/* Tambahan tombol WhatsApp di bawah pembayaran */}
+                {/* Tombol WhatsApp */}
                 <div className="mt-4">
                   <h3 className="text-base font-semibold text-indigo-700 mb-2">
                     More Information by Whatsapp

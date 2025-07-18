@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from "react";
+// src/pages/admin/KelolaPesanan.jsx
+import React, { useState, useEffect, useCallback } from "react";
 import API from "../../api/axios";
 import AdminLayout from "../../layouts/AdminLayout";
 import { FiClipboard, FiEye, FiTrash2, FiCheckCircle } from "react-icons/fi";
+import socket from "../../utils/socket";
 
 const DAFTAR_STATUS_PESANAN = [
   "Sedang Dikemas",
@@ -30,11 +32,7 @@ export default function KelolaPesanan() {
         })
       : "–";
 
-  const onChangeRange = (e) => {
-    setRange({ ...range, [e.target.name]: e.target.value });
-  };
-
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
       const config = { headers: { Authorization: `Bearer ${token}` } };
@@ -58,6 +56,31 @@ export default function KelolaPesanan() {
     } catch (error) {
       setErr("Gagal memuat data pesanan. Token mungkin kedaluwarsa.");
     }
+  }, [range.dari, range.sampai]);
+
+  // Socket event listener
+  useEffect(() => {
+    fetchData();
+
+    const refreshHandler = () => fetchData();
+
+    socket.on("order:created", refreshHandler);
+    socket.on("order:deleted", refreshHandler);
+    socket.on("order:status_updated", refreshHandler);
+    socket.on("order:payment_status", refreshHandler);
+    socket.on("order:selesai", refreshHandler);
+
+    return () => {
+      socket.off("order:created", refreshHandler);
+      socket.off("order:deleted", refreshHandler);
+      socket.off("order:status_updated", refreshHandler);
+      socket.off("order:payment_status", refreshHandler);
+      socket.off("order:selesai", refreshHandler);
+    };
+  }, [fetchData]);
+
+  const onChangeRange = (e) => {
+    setRange({ ...range, [e.target.name]: e.target.value });
   };
 
   const handleExport = async (type) => {
@@ -167,12 +190,6 @@ export default function KelolaPesanan() {
     setStatusLoading((prev) => ({ ...prev, [id]: false }));
   };
 
-  useEffect(() => {
-    fetchData();
-    const intv = setInterval(fetchData, 7000);
-    return () => clearInterval(intv);
-  }, [range]);
-
   const rowsAktif = rows.filter((r) => r.status !== "SELESAI");
   const rowsSelesai = rows.filter((r) => r.status === "SELESAI");
   const total = rowsSelesai.reduce(
@@ -188,7 +205,6 @@ export default function KelolaPesanan() {
     return now > pengembalian ? "Telat Mengembalikan" : "Dalam Penyewaan";
   };
 
-  // === START RENDER ===
   return (
     <AdminLayout>
       <div className="max-w-7xl mx-auto px-2 sm:px-5 py-2">

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import AdminLayout from "../../layouts/AdminLayout";
 import API from "../../api/axios";
 import {
@@ -6,6 +6,7 @@ import {
   FaUsers,
   FaClipboardList,
   FaMoneyBillWave,
+  FaBell,
 } from "react-icons/fa";
 import { FiRefreshCw } from "react-icons/fi";
 import {
@@ -18,8 +19,11 @@ import {
   Tooltip,
 } from "recharts";
 import { useDashboardRefresh } from "../../context/DashboardContext";
+import { io } from "socket.io-client";
 
-// Short month for chart
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:3001";
+
+// Short month helper
 const shortMonth = (m) =>
   ({
     Januari: "Jan",
@@ -32,10 +36,11 @@ const shortMonth = (m) =>
     Agustus: "Agu",
     September: "Sep",
     Oktober: "Okt",
-    November: "Des",
+    November: "Nov",
     Desember: "Des",
   }[m] || m);
 
+// Card Statistik
 const StatCard = ({ Icon, iconBg, color, label, value }) => (
   <div className="flex items-center gap-3 sm:gap-4 bg-white p-4 sm:p-6 rounded-2xl shadow-lg h-full transition-all group hover:shadow-2xl hover:scale-[1.03] min-w-[140px]">
     <div
@@ -55,6 +60,7 @@ const StatCard = ({ Icon, iconBg, color, label, value }) => (
 );
 
 export default function AdminDashboard() {
+  const token = localStorage.getItem("token");
   const [stats, setStats] = useState(null);
   const [chartData, setChartData] = useState([]);
   const [incomeData, setIncomeData] = useState([]);
@@ -63,8 +69,16 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+  // NOTIFIKASI ADMIN STATE
+  const [notifList, setNotifList] = useState([]);
+  const [notifCount, setNotifCount] = useState(0);
+  const [showNotif, setShowNotif] = useState(false);
+
+  const socketRef = useRef(null);
+
   const { refreshKey, triggerRefresh } = useDashboardRefresh();
 
+  // Load Dashboard Data
   const loadData = useCallback(async () => {
     try {
       setLoading(true);
@@ -87,6 +101,7 @@ export default function AdminDashboard() {
       setIncomeData(mapLabel(p.data));
       setRecent(r.data || []);
       setLate(l);
+      setError(null);
     } catch (e) {
       setError(e.message || "Gagal memuat data");
     } finally {
@@ -94,10 +109,102 @@ export default function AdminDashboard() {
     }
   }, []);
 
+  // Load Notifikasi Admin dari backend
+  const loadNotifikasiAdmin = useCallback(async () => {
+    if (!token) return;
+    try {
+      const res = await API.get("/notifikasi-admin", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = res.data || [];
+      setNotifList(data);
+      setNotifCount(data.filter((n) => !n.is_read).length);
+    } catch (err) {
+      console.error("Failed to fetch admin notifications", err);
+    }
+  }, [token]);
+
+  // Effect load dashboard & notif
   useEffect(() => {
     loadData();
-  }, [loadData, refreshKey]);
+    loadNotifikasiAdmin();
+  }, [loadData, loadNotifikasiAdmin, refreshKey]);
 
+  // Setup socket.io and listen notifikasi-admin event
+  useEffect(() => {
+    if (!token) return;
+
+    const socket = io(SOCKET_URL, {
+      auth: { token },
+      transports: ["websocket"],
+    });
+    socketRef.current = socket;
+
+    socket.on("notifikasi-admin", (notif) => {
+      setNotifList((prev) => [notif, ...prev]);
+      setNotifCount((count) => count + 1);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [token]);
+
+  // Handle buka/tutup notif dropdown
+  const handleToggleNotif = () => {
+    setShowNotif((open) => {
+      // Jika membuka dropdown, tandai semua sudah dibaca di backend & update state
+      if (!open && notifCount > 0) {
+        API.post("/notifikasi-admin/mark-read-all", null, {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+          .then(() => {
+            setNotifList((prev) => prev.map((n) => ({ ...n, is_read: true })));
+            setNotifCount(0);
+          })
+          .catch(() => {
+            // Jika error, biarkan notifCount tetap
+          });
+      }
+      return !open;
+    });
+  };
+
+  // Handle klik satu notif: mark as read dan redirect ke kelolapesanan
+  const handleNotifClick = async (notif) => {
+    if (!notif.is_read) {
+      try {
+        await API.put(`/notifikasi-admin/${notif.id}/read`, null, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setNotifList((prev) =>
+          prev.map((n) => (n.id === notif.id ? { ...n, is_read: true } : n))
+        );
+        setNotifCount((count) => Math.max(count - 1, 0));
+      } catch (err) {
+        console.error("Failed to mark notification as read", err);
+      }
+    }
+    setShowNotif(false);
+    window.location.href = "/admin/pesanan";
+  };
+
+  // Handle klik luar untuk menutup dropdown notif
+  useEffect(() => {
+    if (!showNotif) return;
+    const handleClickOutside = (e) => {
+      if (
+        !e.target.closest(".notif-dropdown") &&
+        !e.target.closest(".notif-bell")
+      ) {
+        setShowNotif(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showNotif]);
+
+  // LOADING/ERROR UI
   if (loading)
     return (
       <AdminLayout>
@@ -147,6 +254,67 @@ export default function AdminDashboard() {
 
   return (
     <AdminLayout>
+      {/* NOTIFIKASI BELL */}
+      <div className="flex justify-end items-center w-full mb-4 relative">
+        <button
+          className="relative notif-bell"
+          onClick={handleToggleNotif}
+          aria-label="Lihat notifikasi admin"
+          title="Notifikasi Admin"
+        >
+          <FaBell className="text-2xl text-blue-600 hover:text-blue-800 transition" />
+          {notifCount > 0 && (
+            <span className="absolute -top-1 -right-2 bg-red-500 text-white text-xs font-bold rounded-full px-1.5 py-0.5 animate-pulse z-10">
+              {notifCount}
+            </span>
+          )}
+        </button>
+
+        {/* Dropdown Notifikasi */}
+        {showNotif && (
+          <div className="notif-dropdown absolute right-0 top-11 z-50 bg-white rounded-xl shadow-xl border w-80 max-w-[90vw] animate-fade-in-fast">
+            <div className="flex items-center gap-2 px-4 pt-4 pb-2 border-b">
+              <FaBell className="text-blue-500" />
+              <span className="font-semibold text-blue-800">
+                Notifikasi Admin
+              </span>
+            </div>
+            {notifList.length === 0 ? (
+              <div className="px-4 py-3 text-gray-400">
+                Tidak ada notifikasi.
+              </div>
+            ) : (
+              <ul className="max-h-72 overflow-y-auto divide-y">
+                {notifList.map((item) => (
+                  <li
+                    key={item.id}
+                    className={`px-4 py-3 cursor-pointer flex flex-col ${
+                      item.is_read ? "opacity-60" : "bg-blue-50"
+                    } hover:bg-blue-100`}
+                    onClick={() => handleNotifClick(item)}
+                  >
+                    <span className="text-blue-700 font-semibold truncate">
+                      🔔 {item.title || item.pesan}
+                    </span>
+                    <span className="text-xs text-gray-400 mt-1 truncate">
+                      {item.message || item.pesan}
+                    </span>
+                    <span className="text-xs text-gray-400 mt-1">
+                      {item.createdAt
+                        ? new Date(item.createdAt).toLocaleTimeString("id-ID", {
+                            hour: "2-digit",
+                            minute: "2-digit",
+                          })
+                        : ""}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* HEADER */}
       <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-5 mb-8 md:mb-10">
         <h1 className="text-2xl md:text-4xl font-extrabold text-blue-800 flex items-center gap-3 tracking-tight">
