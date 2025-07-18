@@ -189,12 +189,6 @@ export default function TrackingPage() {
           <h1 className="text-3xl font-extrabold text-blue-800">
             📡 Tracking Kendaraan
           </h1>
-          <button
-            onClick={fetchMotors}
-            className="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-blue-900 font-bold px-4 py-2 rounded-full shadow transition"
-          >
-            <FiRefreshCcw /> Refresh
-          </button>
         </div>
         {loading ? (
           <p className="text-center text-gray-500 animate-pulse">

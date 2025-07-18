@@ -153,12 +153,6 @@ export default function AdminDashboard() {
           <FaClipboardList className="text-blue-500 bg-blue-100 rounded-lg p-2 text-3xl md:text-5xl shadow" />
           Dashboard Admin
         </h1>
-        <button
-          onClick={triggerRefresh}
-          className="flex items-center gap-2 px-4 py-2 md:px-5 md:py-3 bg-gradient-to-r from-blue-500 to-blue-400 text-white font-bold rounded-xl shadow-lg hover:from-blue-600 hover:to-blue-500 transition"
-        >
-          <FiRefreshCw /> Refresh
-        </button>
       </div>
 
       {/* CARD STATISTIK */}
