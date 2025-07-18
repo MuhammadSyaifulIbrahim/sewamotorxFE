@@ -16,9 +16,10 @@ import ResetPassword from "./pages/auth/ResetPassword";
 import DashboardAdmin from "./pages/admin/Dashboard";
 import KelolaProduk from "./pages/admin/KelolaProduk";
 import KelolaPesanan from "./pages/admin/KelolaPesanan";
+import BuktiMotor from "./pages/admin/BuktiMotor.jsx";
 import KelolaUser from "./pages/admin/KelolaUser";
 import AdminLogPage from "./pages/admin/AdminLogPage";
-import TrackingPage from "./pages/admin/TrackingPage"; // ✅ Tambah ini
+import TrackingPage from "./pages/admin/TrackingPage";
 
 // ROUTE GUARDS
 import AdminRoute from "./components/AdminRoute";
@@ -52,6 +53,15 @@ export default function App() {
         element={
           <AdminRoute>
             <KelolaPesanan />
+          </AdminRoute>
+        }
+      />
+      {/* === BUKTI PENERIMAAN & PENGEMBALIAN MOTOR === */}
+      <Route
+        path="/admin/bukti-motor"
+        element={
+          <AdminRoute>
+            <BuktiMotor />
           </AdminRoute>
         }
       />

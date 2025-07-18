@@ -10,7 +10,8 @@ import {
   FiActivity,
   FiMenu,
   FiX,
-  FiMap, // Ikon baru untuk Tracking Kendaraan
+  FiMap,
+  FiImage, // <-- Tambahkan ini!
 } from "react-icons/fi";
 
 export default function AdminLayout({ children }) {
@@ -26,8 +27,13 @@ export default function AdminLayout({ children }) {
     { to: "/admin/dashboard", icon: <FiHome />, label: "Dashboard" },
     { to: "/admin/produk", icon: <FiBox />, label: "Kelola Produk" },
     { to: "/admin/pesanan", icon: <FiClipboard />, label: "Kelola Pesanan" },
+    {
+      to: "/admin/bukti-motor",
+      icon: <FiImage />,
+      label: "Bukti Penerimaan & Pengembalian Motor",
+    },
     { to: "/admin/user", icon: <FiUsers />, label: "Kelola User" },
-    { to: "/admin/tracking", icon: <FiMap />, label: "Tracking Kendaraan" }, // ✅ dipindah ke atas
+    { to: "/admin/tracking", icon: <FiMap />, label: "Tracking Kendaraan" },
     {
       to: "/admin/log-aktivitas",
       icon: <FiActivity />,
