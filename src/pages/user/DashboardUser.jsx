@@ -21,7 +21,6 @@ const getDefaultDatetimeLocal = () => {
   return now.toISOString().slice(0, 10);
 };
 
-// -----------------
 // NOTIFIKASI DROPDOWN
 function NotifDropdown({ notifs, unreadCount, open, onOpen, onClickNotif }) {
   return (
@@ -115,7 +114,6 @@ function formatWIB(dateStr) {
     .replace(".", ":");
 }
 
-// -----------------
 // DASHBOARD USER
 export default function DashboardUser() {
   const navigate = useNavigate();
@@ -126,32 +124,6 @@ export default function DashboardUser() {
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifOpen, setNotifOpen] = useState(false);
   const socketRef = useRef();
-
-  // PATCH: Reset unreadCount dan mark all read pas dropdown notif dibuka
-  useEffect(() => {
-    if (notifOpen && unreadCount > 0) {
-      setUnreadCount(0);
-      setNotifs((prev) => prev.map((n) => ({ ...n, sudah_dibaca: true })));
-      API.post("/notifikasi/mark-read-all", null, {
-        headers: { Authorization: `Bearer ${token}` },
-      }).catch(() => {});
-    }
-  }, [notifOpen]);
-
-  // PATCH: Close dropdown notif kalau klik di luar
-  useEffect(() => {
-    if (!notifOpen) return;
-    const handler = (e) => {
-      if (
-        !e.target.closest(".notif-dropdown") &&
-        !e.target.closest(".notif-bell")
-      ) {
-        setNotifOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handler);
-    return () => document.removeEventListener("mousedown", handler);
-  }, [notifOpen]);
 
   // List motor, state form dsb
   const [kendaraanList, setKendaraanList] = useState([]);
@@ -187,10 +159,46 @@ export default function DashboardUser() {
     foto_sim: null,
   });
 
-  // --- Notif fetcher + socket ---
+  // ===== PATCH: Reset unreadCount dan mark all read pas dropdown notif dibuka
+  useEffect(() => {
+    if (notifOpen && unreadCount > 0) {
+      setUnreadCount(0);
+      setNotifs((prev) => prev.map((n) => ({ ...n, sudah_dibaca: true })));
+      API.post("/notifikasi/mark-read-all", null, {
+        headers: { Authorization: `Bearer ${token}` },
+      }).catch(() => {});
+    }
+  }, [notifOpen]);
+
+  // PATCH: Close dropdown notif kalau klik di luar
+  useEffect(() => {
+    if (!notifOpen) return;
+    const handler = (e) => {
+      if (
+        !e.target.closest(".notif-dropdown") &&
+        !e.target.closest(".notif-bell")
+      ) {
+        setNotifOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, [notifOpen]);
+
+  // ===== REFRESH LIST PRODUK
+  const refreshKendaraanList = () => {
+    API.get("/kendaraan")
+      .then((res) => setKendaraanList(res.data))
+      .catch(() =>
+        alert("Gagal update data kendaraan. Silakan refresh halaman.")
+      );
+  };
+
+  // === Notifikasi + Socket realtime produk ===
   useEffect(() => {
     if (!token) return;
-    // GET initial notifikasi user
+
+    // Initial fetch notifikasi
     API.get("/notifikasi", {
       headers: { Authorization: `Bearer ${token}` },
     })
@@ -200,42 +208,37 @@ export default function DashboardUser() {
       })
       .catch(() => {});
 
-    // SOCKET.IO
+    // === SOCKET.IO
     const socket = io(SOCKET_URL, {
       auth: { token },
       transports: ["websocket"],
     });
     socketRef.current = socket;
 
+    // NOTIFIKASI realtime
     socket.on("notification:new", (notif) => {
       setNotifs((prev) => [notif, ...prev]);
       setUnreadCount((n) => n + 1);
     });
 
-    // Realtime produk
-    socket.on("produk:created", (newMotor) => {
-      setKendaraanList((prev) => [newMotor, ...prev]);
-    });
-    socket.on("produk:updated", (updatedMotor) => {
-      setKendaraanList((prev) =>
-        prev.map((motor) =>
-          motor.id === updatedMotor.id ? updatedMotor : motor
-        )
-      );
-    });
-    socket.on("produk:deleted", (deletedId) => {
-      setKendaraanList((prev) =>
-        prev.filter((motor) => motor.id !== deletedId)
-      );
-    });
+    // LISTEN semua event produk untuk sync full list (realtime robust)
+    socket.on("produk:created", refreshKendaraanList);
+    socket.on("produk:updated", refreshKendaraanList);
+    socket.on("produk:deleted", refreshKendaraanList);
 
-    return () => socket.disconnect();
+    // Cleanup
+    return () => {
+      socket.off("notification:new");
+      socket.off("produk:created", refreshKendaraanList);
+      socket.off("produk:updated", refreshKendaraanList);
+      socket.off("produk:deleted", refreshKendaraanList);
+      socket.disconnect();
+    };
   }, [token]);
 
   // Klik notif
   const handleNotifClick = (notif) => {
     setNotifOpen(false);
-    // PATCH: Tidak perlu setUnreadCount lagi, sudah auto reset saat dropdown dibuka
     API.post(`/notifikasi/${notif.id}/baca`, null, {
       headers: { Authorization: `Bearer ${token}` },
     }).catch(() => {});
@@ -269,7 +272,7 @@ export default function DashboardUser() {
     setErrorJarakJemput("");
   }, [pakaiJemput]);
 
-  // Fetch kendaraan saat mount
+  // Initial fetch kendaraan (saat mount)
   useEffect(() => {
     setLoading(true);
     API.get("/kendaraan")
