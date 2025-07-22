@@ -11,6 +11,10 @@ import {
   FaMoneyCheckAlt,
   FaStar,
 } from "react-icons/fa";
+import { Swiper, SwiperSlide } from "swiper/react";
+import "swiper/css";
+import "swiper/css/pagination";
+import { Pagination, Autoplay } from "swiper/modules";
 
 // Import asset lokal
 import GENIO from "../../assets/GENIO.png";
@@ -164,7 +168,7 @@ export default function LandingPages() {
   return (
     <div className="scroll-smooth overflow-x-hidden font-sans bg-gradient-to-br from-blue-50 via-white to-yellow-50 min-h-screen">
       {/* Navbar */}
-      <header className="fixed top-0 z-50 w-full">
+      <header className="w-full">
         <nav className="max-w-7xl mx-auto mt-3 sm:mt-4 rounded-full bg-white/90 shadow-lg px-2 sm:px-6 py-2 sm:py-3 flex flex-col sm:flex-row gap-3 sm:gap-0 justify-between items-center border border-blue-100 backdrop-blur-lg">
           <div
             className="flex items-center gap-3 cursor-pointer select-none"
@@ -197,30 +201,28 @@ export default function LandingPages() {
         </nav>
       </header>
 
-      {/* Hero/Banner */}
-      <section className="relative flex items-center justify-center bg-gradient-to-r from-blue-100 to-yellow-50 px-2 sm:px-4 pt-28 pb-12 sm:pb-16">
-        <div className="max-w-7xl w-full">
-          <div className="relative rounded-3xl overflow-hidden shadow-2xl">
-            <Carousel
-              autoPlay
-              infiniteLoop
-              showThumbs={false}
-              showStatus={false}
-              interval={4500}
-              className="rounded-3xl"
-            >
-              {[BANNER1, BANNER2, BANNER3].map((img, i) => (
-                <div key={i} className="relative w-full">
-                  <img
-                    src={img}
-                    alt={`Banner ${i + 1}`}
-                    className="w-full aspect-[3/1] object-cover rounded-3xl"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-b from-blue-800/50 via-transparent to-yellow-100/30 pointer-events-none rounded-3xl" />
-                </div>
-              ))}
-            </Carousel>
-          </div>
+      {/* Banner Carousel */}
+      <section className="mb-8 mt-8 max-w-6xl mx-auto w-full px-2">
+        <div className="rounded-3xl shadow-2xl overflow-hidden w-full aspect-video bg-gray-100">
+          <Swiper
+            modules={[Pagination, Autoplay]}
+            pagination={{ clickable: true }}
+            autoplay={{ delay: 4200, disableOnInteraction: false }}
+            slidesPerView={1}
+            loop
+            className="w-full h-full"
+          >
+            {[BANNER1, BANNER2, BANNER3].map((img, idx) => (
+              <SwiperSlide key={idx}>
+                <img
+                  src={img}
+                  alt={`Banner ${idx + 1}`}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+              </SwiperSlide>
+            ))}
+          </Swiper>
         </div>
       </section>
 
