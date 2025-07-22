@@ -1,3 +1,4 @@
+// src/pages/user/HistoryUser.jsx
 import React, { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import API from "../../api/axios";
@@ -13,11 +14,11 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import LogoNoBG from "../../assets/LogoNoBG.png";
-import { BsWhatsapp } from "react-icons/bs";
+import { BsWhatsapp, BsStarFill } from "react-icons/bs";
+import ReviewForm from "./ReviewForm"; // Pastikan path benar!
 
 function HeaderResponsive({ navigate }) {
   const [open, setOpen] = useState(false);
-
   useEffect(() => {
     const handler = () => {
       if (window.innerWidth >= 640) setOpen(false);
@@ -25,7 +26,6 @@ function HeaderResponsive({ navigate }) {
     window.addEventListener("resize", handler);
     return () => window.removeEventListener("resize", handler);
   }, []);
-
   return (
     <header className="fixed top-0 z-50 w-full">
       <nav className="max-w-7xl mx-auto mt-3 sm:mt-4 rounded-full bg-white/90 shadow-lg px-2 sm:px-6 py-2 sm:py-3 flex flex-col sm:flex-row gap-3 sm:gap-0 justify-between items-center border border-blue-100 backdrop-blur-lg">
@@ -69,7 +69,6 @@ function HeaderResponsive({ navigate }) {
     </header>
   );
 }
-
 function MobileNavbar({ navigate, open, setOpen }) {
   return (
     <>
@@ -137,18 +136,23 @@ function MobileNavbar({ navigate, open, setOpen }) {
 export default function HistoryUser() {
   const [riwayat, setRiwayat] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [reviewMap, setReviewMap] = useState({});
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Ambil penyewaan user
   const fetchRiwayat = async () => {
     setLoading(true);
     try {
       const res = await API.get("/penyewaan/user", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
+        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
       });
       setRiwayat(res.data);
+
+      // Setelah dapat list penyewaan, fetch review-nya satu per satu
+      res.data
+        .filter((x) => x.status === "SELESAI")
+        .forEach((item) => fetchReviewForPenyewaan(item.id));
     } catch (err) {
       alert("Gagal memuat riwayat.");
     } finally {
@@ -156,22 +160,31 @@ export default function HistoryUser() {
     }
   };
 
+  // Ambil review by penyewaanId (API tidak tersedia? bisa by kendaraanId + filter penyewaanId di FE)
+  const fetchReviewForPenyewaan = async (penyewaanId) => {
+    try {
+      const res = await API.get(`/review/penyewaan/${penyewaanId}`);
+      if (res.data && res.data.rating) {
+        setReviewMap((prev) => ({ ...prev, [penyewaanId]: res.data }));
+      }
+    } catch {}
+  };
+
   useEffect(() => {
     fetchRiwayat();
+    // eslint-disable-next-line
   }, []);
 
   useEffect(() => {
     const urlParams = new URLSearchParams(location.search);
     if (urlParams.get("justPaid") === "true") {
-      fetchRiwayat(); // Refresh data
-
-      // Hapus query setelah 3 detik
+      fetchRiwayat();
       const timeout = setTimeout(() => {
         navigate(location.pathname, { replace: true });
       }, 3000);
-
       return () => clearTimeout(timeout);
     }
+    // eslint-disable-next-line
   }, [location.search, location.pathname, navigate]);
 
   const renderImage = (gambar) =>
@@ -180,6 +193,11 @@ export default function HistoryUser() {
   const getStatusBadge = (status) => {
     let color, icon, label;
     switch (status) {
+      case "SELESAI":
+        color = "bg-green-100 text-green-700";
+        icon = <CheckCircle size={16} className="inline mr-1" />;
+        label = "Selesai";
+        break;
       case "BERHASIL":
         color = "bg-green-100 text-green-700";
         icon = <CheckCircle size={16} className="inline mr-1" />;
@@ -219,8 +237,8 @@ export default function HistoryUser() {
       icon: <CarFront size={22} className="mx-auto" />,
     },
     {
-      label: "Berhasil",
-      count: riwayat.filter((r) => r.status === "BERHASIL").length,
+      label: "Selesai",
+      count: riwayat.filter((r) => r.status === "SELESAI").length,
       color: "bg-green-50 text-green-600",
       icon: <CheckCircle size={22} className="mx-auto" />,
     },
@@ -240,6 +258,7 @@ export default function HistoryUser() {
     },
   ];
 
+  // Tampilkan semua history
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-yellow-50 font-sans">
       <HeaderResponsive navigate={navigate} />
@@ -287,62 +306,100 @@ export default function HistoryUser() {
                   exit={{ opacity: 0, y: 24 }}
                   transition={{ duration: 0.18, delay: i * 0.04 }}
                 >
-                  <div
-                    onClick={() => navigate(`/dashboard/history/${item.id}`)}
-                    className="bg-white group hover:bg-yellow-50 shadow-xl rounded-3xl cursor-pointer overflow-hidden border border-blue-100 hover:border-yellow-300 transition-all duration-200"
-                  >
-                    <div className="relative aspect-video bg-gray-50 flex items-center justify-center">
-                      <img
-                        src={renderImage(item.kendaraan?.gambar)}
-                        alt={item.kendaraan?.nama}
-                        className="w-full h-full object-contain transition duration-150 scale-95 group-hover:scale-100"
-                      />
-                      <div className="absolute top-3 left-3">
-                        {getStatusBadge(item.status)}
+                  <div className="bg-white group hover:bg-yellow-50 shadow-xl rounded-3xl overflow-hidden border border-blue-100 hover:border-yellow-300 transition-all duration-200">
+                    {/* Bagian klik ke detail */}
+                    <div
+                      onClick={() => navigate(`/dashboard/history/${item.id}`)}
+                      className="cursor-pointer"
+                    >
+                      <div className="relative aspect-video bg-gray-50 flex items-center justify-center">
+                        <img
+                          src={renderImage(item.kendaraan?.gambar)}
+                          alt={item.kendaraan?.nama}
+                          className="w-full h-full object-contain transition duration-150 scale-95 group-hover:scale-100"
+                        />
+                        <div className="absolute top-3 left-3">
+                          {getStatusBadge(item.status)}
+                        </div>
+                      </div>
+                      <div className="p-5 space-y-1">
+                        <div className="flex justify-between items-center">
+                          <h2 className="text-lg font-bold text-indigo-700 group-hover:text-yellow-700 transition">
+                            {item.kendaraan?.nama}
+                          </h2>
+                          <span className="text-xs text-blue-800 font-semibold">
+                            {item.durasi_hari} hari
+                          </span>
+                        </div>
+                        <p className="text-sm text-gray-500 mb-1">
+                          {item.kendaraan?.tipe} / {item.kendaraan?.transmisi}
+                        </p>
+                        <p className="text-sm">
+                          <span className="font-semibold">Jadwal: </span>
+                          {new Date(item.jadwal_booking).toLocaleString(
+                            "id-ID"
+                          )}
+                        </p>
+                        <p className="text-sm">
+                          <span className="font-semibold">Pengambilan: </span>
+                          {item.metode_pengambilan === "Diantar"
+                            ? `🚚 Diantar (${item.alamat_pengambilan || "-"})`
+                            : "📍 Showroom"}
+                        </p>
+                        <p className="text-sm">
+                          <span className="font-semibold">Pengembalian: </span>
+                          {item.metode_pengembalian === "Diambil"
+                            ? `🚚 Diambil (${item.alamat_pengembalian || "-"})`
+                            : "📍 Showroom"}
+                        </p>
+                        <p className="text-sm text-green-700 font-bold mt-1">
+                          Rp {Number(item.harga_total).toLocaleString("id-ID")}
+                        </p>
+                        {item.status === "MENUNGGU_PEMBAYARAN" && (
+                          <motion.p
+                            initial={{ scale: 0.92 }}
+                            animate={{ scale: 1 }}
+                            transition={{ yoyo: Infinity, duration: 0.8 }}
+                            className="text-xs text-red-600 font-bold mt-2"
+                          >
+                            ⚠️ Selesaikan pembayaran segera!
+                          </motion.p>
+                        )}
                       </div>
                     </div>
-                    <div className="p-5 space-y-1">
-                      <div className="flex justify-between items-center">
-                        <h2 className="text-lg font-bold text-indigo-700 group-hover:text-yellow-700 transition">
-                          {item.kendaraan?.nama}
-                        </h2>
-                        <span className="text-xs text-blue-800 font-semibold">
-                          {item.durasi_hari} hari
-                        </span>
+                    {/* === Review Section (di bawah, tidak ikut ke detail) */}
+                    {item.status === "SELESAI" && (
+                      <div className="border-t px-5 pb-4 pt-3 bg-blue-50">
+                        {reviewMap[item.id] ? (
+                          <div>
+                            <div className="flex items-center gap-2 mb-1">
+                              <span className="font-semibold text-sm text-blue-800">
+                                Ulasan Kamu:
+                              </span>
+                              {[...Array(5)].map((_, idx) => (
+                                <BsStarFill
+                                  key={idx}
+                                  className={`text-xl ${
+                                    idx < reviewMap[item.id].rating
+                                      ? "text-yellow-400"
+                                      : "text-gray-200"
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                            <div className="text-gray-700 text-sm italic border-l-4 border-yellow-200 pl-3">
+                              {reviewMap[item.id].pesan}
+                            </div>
+                          </div>
+                        ) : (
+                          <ReviewForm
+                            penyewaanId={item.id}
+                            kendaraanId={item.kendaraanId}
+                            onSukses={() => fetchReviewForPenyewaan(item.id)}
+                          />
+                        )}
                       </div>
-                      <p className="text-sm text-gray-500 mb-1">
-                        {item.kendaraan?.tipe} / {item.kendaraan?.transmisi}
-                      </p>
-                      <p className="text-sm">
-                        <span className="font-semibold">Jadwal: </span>
-                        {new Date(item.jadwal_booking).toLocaleString("id-ID")}
-                      </p>
-                      <p className="text-sm">
-                        <span className="font-semibold">Pengambilan: </span>
-                        {item.metode_pengambilan === "Diantar"
-                          ? `🚚 Diantar (${item.alamat_pengambilan || "-"})`
-                          : "📍 Showroom"}
-                      </p>
-                      <p className="text-sm">
-                        <span className="font-semibold">Pengembalian: </span>
-                        {item.metode_pengembalian === "Diambil"
-                          ? `🚚 Diambil (${item.alamat_pengembalian || "-"})`
-                          : "📍 Showroom"}
-                      </p>
-                      <p className="text-sm text-green-700 font-bold mt-1">
-                        Rp {Number(item.harga_total).toLocaleString("id-ID")}
-                      </p>
-                      {item.status === "MENUNGGU_PEMBAYARAN" && (
-                        <motion.p
-                          initial={{ scale: 0.92 }}
-                          animate={{ scale: 1 }}
-                          transition={{ yoyo: Infinity, duration: 0.8 }}
-                          className="text-xs text-red-600 font-bold mt-2"
-                        >
-                          ⚠️ Selesaikan pembayaran segera!
-                        </motion.p>
-                      )}
-                    </div>
+                    )}
                   </div>
                 </motion.div>
               ))}
@@ -372,7 +429,6 @@ export default function HistoryUser() {
           <BsWhatsapp size={28} />
         </a>
       </motion.div>
-
       {/* Footer */}
       <footer className="bg-blue-900 text-white py-12 sm:py-16 px-3 sm:px-6">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">

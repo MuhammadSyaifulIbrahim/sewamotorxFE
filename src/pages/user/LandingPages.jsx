@@ -1,8 +1,6 @@
 import React, { useRef, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Carousel } from "react-responsive-carousel";
-import "react-responsive-carousel/lib/styles/carousel.min.css";
 import { BsWhatsapp } from "react-icons/bs";
 import {
   FaCarSide,
@@ -15,8 +13,8 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
 import "swiper/css/pagination";
 import { Pagination, Autoplay } from "swiper/modules";
-
-// Import asset lokal
+import axios from "axios";
+// --- ASSET ---
 import GENIO from "../../assets/GENIO.png";
 import NMAX from "../../assets/NMAX.png";
 import XMAX from "../../assets/XMAX.png";
@@ -29,7 +27,12 @@ import BANNER2 from "../../assets/Carousel2.png";
 import BANNER3 from "../../assets/Carousel3.png";
 import LogoNoBG from "../../assets/LogoNoBG.png";
 
-// Data Motor (pakai import asset lokal)
+// Ganti dengan base url API kamu jika beda
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  "https://sewamotorxbe-production.up.railway.app/api";
+
+// Data Motor
 const MOTORLIST = [
   {
     name: "Genio",
@@ -103,36 +106,21 @@ const MOTORLIST = [
   },
 ];
 
-// Testimoni
-const TESTIMONI = [
-  {
-    nama: "Rizky A.",
-    text: "Booking gampang, motor bersih, CS responsif. Harga oke banget buat sewa harian.",
-    star: 5,
-    img: "https://randomuser.me/api/portraits/men/43.jpg",
-  },
-  {
-    nama: "Santi Wijaya",
-    text: "Suka banget bisa antar-jemput. Tanpa DP dan gak ribet syarat. Rekomen banget deh!",
-    star: 5,
-    img: "https://randomuser.me/api/portraits/women/47.jpg",
-  },
-  {
-    nama: "Budi Setiawan",
-    text: "Pernah pinjam untuk perjalanan dinas. Motor ready, mudah urusnya, pokoknya mantap!",
-    star: 4,
-    img: "https://randomuser.me/api/portraits/men/15.jpg",
-  },
-];
+// Avatar generator (auto avatar jika tidak ada foto user)
+const randomAvatar = (nama = "") =>
+  `https://ui-avatars.com/api/?name=${encodeURIComponent(
+    nama
+  )}&background=6E9EF8&color=fff&rounded=true&bold=true&size=128`;
 
 export default function LandingPages() {
   const navigate = useNavigate();
-
-  // AUTO SCROLL CAROUSEL MOTOR
   const containerRef = useRef(null);
   const [isPaused, setIsPaused] = useState(false);
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [reviewList, setReviewList] = useState([]);
+  const [reviewLoading, setReviewLoading] = useState(true);
 
+  // AUTO SCROLL CAROUSEL MOTOR
   useEffect(() => {
     const handleResize = () => setIsMobile(window.innerWidth < 768);
     window.addEventListener("resize", handleResize);
@@ -162,6 +150,22 @@ export default function LandingPages() {
     document.body.style.overflowX = "hidden";
     return () => {
       document.body.style.overflowX = "";
+    };
+  }, []);
+
+  // === Fetch Review Public dari Backend ===
+  useEffect(() => {
+    let isMounted = true;
+    setReviewLoading(true);
+    axios
+      .get(`${API_BASE_URL}/review/public`)
+      .then((res) => {
+        if (isMounted) setReviewList(res.data || []);
+      })
+      .catch(() => setReviewList([]))
+      .finally(() => setReviewLoading(false));
+    return () => {
+      isMounted = false;
     };
   }, []);
 
@@ -262,12 +266,12 @@ export default function LandingPages() {
                 }}
                 transition={{ type: "spring", stiffness: 200, damping: 17 }}
                 className={`
-      motor-card relative rounded-2xl
-      min-w-[82vw] max-w-[94vw]
-      sm:min-w-[320px] sm:max-w-xs
-      md:min-w-[260px] md:max-w-[320px]
-      w-full shadow-xl overflow-hidden border border-blue-100 bg-white text-black group snap-center
-    `}
+                  motor-card relative rounded-2xl
+                  min-w-[82vw] max-w-[94vw]
+                  sm:min-w-[320px] sm:max-w-xs
+                  md:min-w-[260px] md:max-w-[320px]
+                  w-full shadow-xl overflow-hidden border border-blue-100 bg-white text-black group snap-center
+                `}
               >
                 {/* Badge Diskon dan Best Seller */}
                 {m.diskon > 0 && (
@@ -352,18 +356,15 @@ export default function LandingPages() {
               </motion.div>
             ))}
           </div>
-
-          {/* Hide scrollbar */}
-          {/* Hide scrollbar */}
           <style>{`
-  .scrollbar-hide {
-    -ms-overflow-style: none;
-    scrollbar-width: none;
-  }
-  .scrollbar-hide::-webkit-scrollbar {
-    display: none;
-  }
-`}</style>
+            .scrollbar-hide {
+              -ms-overflow-style: none;
+              scrollbar-width: none;
+            }
+            .scrollbar-hide::-webkit-scrollbar {
+              display: none;
+            }
+          `}</style>
         </div>
       </section>
 
@@ -375,7 +376,7 @@ export default function LandingPages() {
         className="fixed bottom-16 right-5 z-50 flex flex-col items-center space-y-1"
       >
         <span className="text-sm font-semibold text-green-700 select-none cursor-default flex items-center gap-1">
-          Number CS <span className="text-lg">⬇️</span>
+          Nomor CS <span className="text-lg">⬇️</span>
         </span>
         <a
           href="https://wa.me/6285776828467"
@@ -387,36 +388,60 @@ export default function LandingPages() {
         </a>
       </motion.div>
 
-      {/* Testimoni */}
+      {/* Testimoni / Review Customer */}
       <section className="py-16 sm:py-20 px-3 sm:px-6 bg-gradient-to-br from-yellow-100 via-blue-50 to-white">
         <div className="max-w-5xl mx-auto text-center mb-9 sm:mb-12">
           <h3 className="text-2xl sm:text-3xl font-bold mb-2 text-blue-800">
             Apa Kata Customer?
           </h3>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
-          {TESTIMONI.map((t, i) => (
-            <div
-              key={i}
-              className="bg-white p-7 rounded-2xl shadow-lg flex flex-col items-center"
-            >
-              <img
-                src={t.img}
-                alt={t.nama}
-                className="w-16 h-16 rounded-full object-cover mb-3 shadow"
-              />
-              <div className="flex items-center gap-1 text-yellow-400 mb-1">
-                {[...Array(t.star)].map((_, j) => (
-                  <FaStar key={j} />
-                ))}
+        {reviewLoading ? (
+          <div className="flex justify-center items-center min-h-[160px]">
+            <span className="text-blue-700 font-semibold animate-pulse">
+              Memuat review pelanggan...
+            </span>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
+            {reviewList.length > 0 ? (
+              reviewList.map((t, i) => (
+                <div
+                  key={i}
+                  className="bg-white p-7 rounded-2xl shadow-lg flex flex-col items-center"
+                >
+                  <img
+                    src={randomAvatar(t.user?.nama)}
+                    alt={t.user?.nama || "Customer"}
+                    className="w-16 h-16 rounded-full object-cover mb-3 shadow"
+                  />
+                  <div className="flex items-center gap-1 text-yellow-400 mb-1">
+                    {[...Array(5)].map((_, j) => (
+                      <FaStar
+                        key={j}
+                        className={j < Number(t.rating) ? "" : "opacity-30"}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-gray-700 text-sm mb-2 font-semibold">
+                    "{t.pesan}"
+                  </p>
+                  <div className="text-blue-800 font-bold">
+                    {t.user?.nama || "Customer"}
+                  </div>
+                  {t.kendaraan?.nama && (
+                    <div className="text-xs text-gray-400 font-medium mt-1">
+                      (Sewa {t.kendaraan?.nama})
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className="col-span-full text-gray-400 text-center font-medium">
+                Belum ada review customer terbaru.
               </div>
-              <p className="text-gray-700 text-sm mb-2 font-semibold">
-                "{t.text}"
-              </p>
-              <div className="text-blue-800 font-bold">{t.nama}</div>
-            </div>
-          ))}
-        </div>
+            )}
+          </div>
+        )}
       </section>
 
       {/* Location */}
