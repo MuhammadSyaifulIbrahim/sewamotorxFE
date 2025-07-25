@@ -4,13 +4,30 @@ import { History, LogOut, Bell } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import API from "../../api/axios";
 import LogoNoBG from "../../assets/LogoNoBG.png";
-import Banner from "../../assets/Motor.gif";
+import Banner1 from "../../assets/Carousel1.png";
+import Banner2 from "../../assets/Carousel2.png";
+import Banner3 from "../../assets/Carousel3.png";
 import { getDistanceGoogle } from "../../utils/getDistanceGoogle";
 import { BsWhatsapp } from "react-icons/bs";
 import { io } from "socket.io-client";
+import axios from "axios";
+import {
+  FaCarSide,
+  FaShuttleVan,
+  FaHandshake,
+  FaMoneyCheckAlt,
+  FaStar,
+} from "react-icons/fa";
+import "swiper/css";
+import "swiper/css/pagination";
+import { Swiper, SwiperSlide } from "swiper/react";
+import { Pagination, Autoplay } from "swiper/modules";
 
 const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "http://localhost:3001";
-const HERO_IMG = Banner;
+const API_BASE_URL =
+  import.meta.env.VITE_API_URL ||
+  "https://sewamotorxbe-production.up.railway.app/api";
+const HERO_BANNERS = [Banner1, Banner2, Banner3];
 const SHOWROOM_ADDRESS =
   "Jl. Kemang Utara VII G No.2, RT 001/ RW04, Jakarta Selatan";
 
@@ -20,6 +37,12 @@ const getDefaultDatetimeLocal = () => {
   now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
   return now.toISOString().slice(0, 10);
 };
+
+// Avatar generator untuk review
+const randomAvatar = (nama = "") =>
+  `https://ui-avatars.com/api/?name=${encodeURIComponent(
+    nama
+  )}&background=6E9EF8&color=fff&rounded=true&bold=true&size=128`;
 
 // NOTIFIKASI DROPDOWN
 function NotifDropdown({ notifs, unreadCount, open, onOpen, onClickNotif }) {
@@ -107,25 +130,99 @@ function formatWIB(dateStr) {
   if (!dateStr) return "";
   const d = new Date(dateStr);
   return d
-    .toLocaleTimeString("id-ID", {
-      hour: "2-digit",
-      minute: "2-digit",
-    })
+    .toLocaleTimeString("id-ID", { hour: "2-digit", minute: "2-digit" })
     .replace(".", ":");
+}
+
+// === MOBILE NAVBAR ===
+function MobileNavbar({ navigate }) {
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    const handler = () => {
+      if (window.innerWidth >= 640) setOpen(false);
+    };
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+
+  return (
+    <>
+      <button
+        className="sm:hidden flex flex-col justify-center items-center w-10 h-10 rounded-full border border-indigo-100 bg-indigo-50 hover:bg-indigo-200 transition focus:outline-none"
+        onClick={() => setOpen((v) => !v)}
+        aria-label="Buka menu navigasi"
+        type="button"
+      >
+        <span className="block w-6 h-0.5 bg-indigo-600 rounded mb-1" />
+        <span className="block w-6 h-0.5 bg-indigo-600 rounded mb-1" />
+        <span className="block w-6 h-0.5 bg-indigo-600 rounded" />
+      </button>
+      <AnimatePresence>
+        {open && (
+          <motion.div
+            initial={{ x: "100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "100%" }}
+            transition={{ type: "tween", duration: 0.22 }}
+            className="fixed top-0 right-0 w-64 h-full bg-white shadow-2xl z-[999] flex flex-col"
+            style={{
+              borderTopLeftRadius: "2rem",
+              borderBottomLeftRadius: "2rem",
+            }}
+          >
+            <div className="flex justify-between items-center px-6 py-5 border-b border-gray-100">
+              <span className="text-xl font-black text-indigo-700">
+                MotoRent
+              </span>
+              <button
+                onClick={() => setOpen(false)}
+                className="w-9 h-9 flex items-center justify-center bg-indigo-50 hover:bg-indigo-100 rounded-full text-2xl text-indigo-600"
+                aria-label="Tutup menu"
+              >
+                ×
+              </button>
+            </div>
+            <nav className="flex flex-col gap-2 px-6 py-6">
+              <button
+                onClick={() => {
+                  navigate("/dashboard/history");
+                  setOpen(false);
+                }}
+                className="flex items-center px-4 py-2 mb-2 rounded-full font-bold text-indigo-700 bg-indigo-100 hover:bg-indigo-200 transition text-base"
+              >
+                <History className="mr-2" /> Riwayat
+              </button>
+              <button
+                onClick={() => {
+                  localStorage.clear();
+                  navigate("/");
+                  setOpen(false);
+                }}
+                className="flex items-center px-4 py-2 rounded-full font-bold text-white bg-gradient-to-r from-pink-400 to-red-500 hover:opacity-90 transition text-base"
+              >
+                <LogOut className="mr-2" /> Logout
+              </button>
+            </nav>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
 }
 
 // DASHBOARD USER
 export default function DashboardUser() {
   const navigate = useNavigate();
   const token = localStorage.getItem("token");
+  const socketRef = useRef();
 
-  // NOTIFIKASI
+  // --- NOTIFIKASI ---
   const [notifs, setNotifs] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [notifOpen, setNotifOpen] = useState(false);
-  const socketRef = useRef();
 
-  // List motor, state form dsb
+  // --- MOTOR & FORM STATE ---
   const [kendaraanList, setKendaraanList] = useState([]);
   const [selectedMotor, setSelectedMotor] = useState(null);
   const [modalImage, setModalImage] = useState(null);
@@ -159,7 +256,27 @@ export default function DashboardUser() {
     foto_sim: null,
   });
 
-  // ===== PATCH: Reset unreadCount dan mark all read pas dropdown notif dibuka
+  // --- REVIEW SECTION ---
+  const [reviewList, setReviewList] = useState([]);
+  const [reviewLoading, setReviewLoading] = useState(true);
+
+  // Fetch review dari API /review/public
+  useEffect(() => {
+    let isMounted = true;
+    setReviewLoading(true);
+    axios
+      .get(`${API_BASE_URL}/review/public`)
+      .then((res) => {
+        if (isMounted) setReviewList(res.data || []);
+      })
+      .catch(() => setReviewList([]))
+      .finally(() => setReviewLoading(false));
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // --- PATCH: Reset unreadCount & mark all read pas dropdown notif dibuka
   useEffect(() => {
     if (notifOpen && unreadCount > 0) {
       setUnreadCount(0);
@@ -185,7 +302,7 @@ export default function DashboardUser() {
     return () => document.removeEventListener("mousedown", handler);
   }, [notifOpen]);
 
-  // ===== REFRESH LIST PRODUK
+  // Refresh list produk
   const refreshKendaraanList = () => {
     API.get("/kendaraan")
       .then((res) => setKendaraanList(res.data))
@@ -194,11 +311,9 @@ export default function DashboardUser() {
       );
   };
 
-  // === Notifikasi + Socket realtime produk ===
+  // --- Notifikasi + Socket realtime produk ---
   useEffect(() => {
     if (!token) return;
-
-    // Initial fetch notifikasi
     API.get("/notifikasi", {
       headers: { Authorization: `Bearer ${token}` },
     })
@@ -207,26 +322,18 @@ export default function DashboardUser() {
         setUnreadCount((res.data || []).filter((n) => !n.sudah_dibaca).length);
       })
       .catch(() => {});
-
-    // === SOCKET.IO
     const socket = io(SOCKET_URL, {
       auth: { token },
       transports: ["websocket"],
     });
     socketRef.current = socket;
-
-    // NOTIFIKASI realtime
     socket.on("notification:new", (notif) => {
       setNotifs((prev) => [notif, ...prev]);
       setUnreadCount((n) => n + 1);
     });
-
-    // LISTEN semua event produk untuk sync full list (realtime robust)
     socket.on("produk:created", refreshKendaraanList);
     socket.on("produk:updated", refreshKendaraanList);
     socket.on("produk:deleted", refreshKendaraanList);
-
-    // Cleanup
     return () => {
       socket.off("notification:new");
       socket.off("produk:created", refreshKendaraanList);
@@ -247,12 +354,10 @@ export default function DashboardUser() {
     else navigate("/dashboard/history");
   };
 
-  // Redirect login jika tidak ada token
   useEffect(() => {
     if (!token) navigate("/login");
   }, [token, navigate]);
 
-  // Reset lokasi dan jarak saat opsi antar/jemput berubah
   useEffect(() => {
     setFormData((prev) => ({
       ...prev,
@@ -272,7 +377,6 @@ export default function DashboardUser() {
     setErrorJarakJemput("");
   }, [pakaiJemput]);
 
-  // Initial fetch kendaraan (saat mount)
   useEffect(() => {
     setLoading(true);
     API.get("/kendaraan")
@@ -351,7 +455,7 @@ export default function DashboardUser() {
     };
   };
 
-  // Submit form penyewaan
+  // Submit form penyewaan (tidak diubah)
   const handleChange = (e) => {
     const { name, value, files } = e.target;
     setFormData((prev) => ({
@@ -569,35 +673,28 @@ export default function DashboardUser() {
         </nav>
       </header>
 
-      {/* HERO */}
-      <section
-        className="h-[48vh] sm:h-[60vh] bg-cover bg-center flex items-center justify-center text-white relative rounded-b-3xl shadow-lg mb-8"
-        style={{ backgroundImage: `url(${HERO_IMG})` }}
-      >
-        <div className="absolute inset-0 bg-indigo-900/60 rounded-b-3xl" />
-        <div className="relative z-10 text-center">
-          <motion.h2
-            initial={{ y: 40, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            className="text-4xl sm:text-5xl font-extrabold mb-2 drop-shadow-lg"
-            style={{ fontFamily: "Inter, sans-serif" }}
+      {/* HERO CAROUSEL */}
+      <section className="mt-24 mb-6 max-w-5xl mx-auto w-full px-2">
+        <div className="rounded-3xl shadow-2xl overflow-hidden w-full aspect-video bg-gray-100">
+          <Swiper
+            modules={[Pagination, Autoplay]}
+            pagination={{ clickable: true }}
+            autoplay={{ delay: 3900, disableOnInteraction: false }}
+            slidesPerView={1}
+            loop
+            className="w-full h-full"
           >
-            🚦 Temukan Motor Impianmu
-          </motion.h2>
-          <motion.p
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1, transition: { delay: 0.13 } }}
-            className="text-lg sm:text-xl font-medium drop-shadow mb-6"
-          >
-            Pilih motor favorit, harga jujur, sewa mudah & anti ribet!
-          </motion.p>
-          <a
-            href="#list-motor"
-            className="inline-block px-8 py-3 rounded-full bg-yellow-300 text-indigo-900 font-extrabold shadow hover:scale-105 hover:bg-yellow-400 transition"
-            style={{ fontFamily: "Inter, sans-serif" }}
-          >
-            🚀 Lihat Daftar Motor
-          </a>
+            {HERO_BANNERS.map((img, idx) => (
+              <SwiperSlide key={idx}>
+                <img
+                  src={img}
+                  alt={`Banner ${idx + 1}`}
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                />
+              </SwiperSlide>
+            ))}
+          </Swiper>
         </div>
       </section>
 
@@ -640,7 +737,7 @@ export default function DashboardUser() {
         </div>
       </div>
 
-      {/* LIST MOTOR */}
+      {/* LIST MOTOR (seperti dashboard awalmu, TIDAK DIUBAH) */}
       <section
         id="list-motor"
         className="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8 px-4 pb-16"
@@ -671,7 +768,6 @@ export default function DashboardUser() {
             >
               {motor.stok > 0 ? `${motor.stok} Unit Ready` : "Stok Habis"}
             </span>
-
             <motion.img
               src={
                 motor.gambar ||
@@ -687,7 +783,6 @@ export default function DashboardUser() {
                   "https://via.placeholder.com/300x200?text=No+Image")
               }
             />
-
             <h3
               className="font-black text-xl text-indigo-800 mb-2 tracking-wide"
               style={{ fontFamily: "Inter, sans-serif" }}
@@ -718,7 +813,6 @@ export default function DashboardUser() {
                 Rp {Number(motor.harga_sewa).toLocaleString("id-ID")} / hari
               </div>
             )}
-
             <motion.button
               whileTap={{ scale: 0.97 }}
               disabled={motor.stok === 0 || loading}
@@ -1301,6 +1395,340 @@ export default function DashboardUser() {
         )}
       </AnimatePresence>
 
+      {/* --- SECTION TESTIMONI/REVIEW CUSTOMER --- */}
+      <section className="py-16 sm:py-20 px-3 sm:px-6 bg-gradient-to-br from-yellow-100 via-blue-50 to-white">
+        <div className="max-w-5xl mx-auto text-center mb-9 sm:mb-12">
+          <h3 className="text-2xl sm:text-3xl font-bold mb-2 text-blue-800">
+            Apa Kata Customer?
+          </h3>
+        </div>
+        {reviewLoading ? (
+          <div className="flex justify-center items-center min-h-[160px]">
+            <span className="text-blue-700 font-semibold animate-pulse">
+              Memuat review pelanggan...
+            </span>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
+            {reviewList.length > 0 ? (
+              reviewList.map((t, i) => (
+                <div
+                  key={i}
+                  className="bg-white p-7 rounded-2xl shadow-lg flex flex-col items-center"
+                >
+                  <img
+                    src={randomAvatar(t.user?.nama)}
+                    alt={t.user?.nama || "Customer"}
+                    className="w-16 h-16 rounded-full object-cover mb-3 shadow"
+                  />
+                  <div className="flex items-center gap-1 text-yellow-400 mb-1">
+                    {[...Array(5)].map((_, j) => (
+                      <FaStar
+                        key={j}
+                        className={j < Number(t.rating) ? "" : "opacity-30"}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-gray-700 text-sm mb-2 font-semibold">
+                    "{t.pesan}"
+                  </p>
+                  <div className="text-blue-800 font-bold">
+                    {t.user?.nama || "Customer"}
+                  </div>
+                  {t.kendaraan?.nama && (
+                    <div className="text-xs text-gray-400 font-medium mt-1">
+                      (Sewa {t.kendaraan?.nama})
+                    </div>
+                  )}
+                </div>
+              ))
+            ) : (
+              <div className="col-span-full text-gray-400 text-center font-medium">
+                Belum ada review customer terbaru.
+              </div>
+            )}
+          </div>
+        )}
+      </section>
+
+      {/* --- SECTION LOKASI & ABOUT --- */}
+      <section
+        className="bg-blue-800 text-yellow-400 py-16 sm:py-20 px-3 sm:px-6"
+        id="location"
+      >
+        <div className="max-w-6xl mx-auto text-center border border-yellow-400 rounded-xl py-7 sm:py-10 px-2 sm:px-4 shadow-lg">
+          <h2 className="text-2xl sm:text-4xl font-bold mb-4 sm:mb-6 text-yellow-400">
+            Available At
+          </h2>
+          <p className="text-base sm:text-lg md:text-xl font-semibold mb-5 sm:mb-6 leading-relaxed">
+            Jakarta | Jakarta Selatan
+          </p>
+          <a
+            href="https://wa.me/6285776828467"
+            className="bg-yellow-400 hover:bg-yellow-300 text-black font-semibold py-2 px-5 sm:px-6 rounded shadow transition"
+          >
+            Contact Us
+          </a>
+        </div>
+        <div className="mt-10 sm:mt-16 grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-10 items-center">
+          <div className="w-full h-64 sm:h-80 rounded-xl overflow-hidden">
+            <iframe
+              title="Map Location"
+              src="https://www.google.com/maps?q=-6.2642677,106.8194088&hl=en&z=14&output=embed"
+              width="100%"
+              height="100%"
+              loading="lazy"
+              className="rounded-xl border-2 border-yellow-400 min-h-[220px]"
+            ></iframe>
+          </div>
+          <div className="text-left text-white">
+            <h3 className="text-xl sm:text-2xl font-bold text-yellow-400 mb-2">
+              Head Office
+            </h3>
+            <p className="text-base sm:text-lg font-semibold mb-1">UI Works</p>
+            <a
+              href="https://maps.app.goo.gl/fyabSHRKeVKWJnrB6"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm text-gray-300 hover:text-yellow-300 block mb-4"
+            >
+              Jalan Kemang Utara VII G No.2 RT 001 RW 004, Jakarta Selatan,
+              Kodepos 12730
+            </a>
+            <p className="text-sm text-gray-300">
+              Buka: <span className="text-white">Senin – Jumat</span> (kecuali
+              tanggal merah)
+              <br />
+              Jam: <span className="text-white">09:00 – 17:00</span>
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION LAYANAN */}
+      <section
+        id="about"
+        className="bg-white text-gray-800 py-20 sm:py-24 px-3 sm:px-6"
+      >
+        <div className="max-w-6xl mx-auto text-center mb-10 sm:mb-12">
+          <h3 className="text-2xl sm:text-3xl font-bold mb-2 text-blue-800">
+            LAYANAN KAMI
+          </h3>
+          <p className="text-gray-600">
+            Kami menawarkan berbagai layanan sewa motor Jakarta yang fleksibel
+            dan nyaman, siap memenuhi kebutuhan perjalanan Anda.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-7 sm:gap-8">
+          {[
+            {
+              title: "Sewa Motor 24 Jam",
+              desc: "Layanan sewa motor harian, mingguan, atau bulanan. Armada terawat, harga kompetitif, siap pakai.",
+              icon: (
+                <FaCarSide className="text-3xl sm:text-4xl text-blue-700" />
+              ),
+            },
+            {
+              title: "Sewa Hiace & City Tour",
+              desc: "Keliling Jakarta makin nyaman. Hiace dan driver profesional, cocok buat wisata/group event.",
+              icon: (
+                <FaShuttleVan className="text-3xl sm:text-4xl text-blue-700" />
+              ),
+            },
+            {
+              title: "Antar – Jemput Kendaraan",
+              desc: "Motor diantar & diambil ke lokasi Anda. Praktis, aman, fleksibel.",
+              icon: (
+                <FaHandshake className="text-3xl sm:text-4xl text-blue-700" />
+              ),
+            },
+            {
+              title: "Tanpa DP/Deposit & Survey",
+              desc: "Booking cepat tanpa perlu DP/Deposit, tanpa survey. Tinggal klik & berangkat!",
+              icon: (
+                <FaMoneyCheckAlt className="text-3xl sm:text-4xl text-blue-700" />
+              ),
+            },
+          ].map(({ title, desc, icon }, i) => (
+            <div
+              key={i}
+              className="flex gap-3 sm:gap-4 bg-gradient-to-br from-blue-50 via-white to-yellow-100 rounded-2xl shadow-md p-5 sm:p-6 hover:shadow-lg transition"
+            >
+              <div className="flex-shrink-0">{icon}</div>
+              <div className="text-left">
+                <h4 className="font-bold text-base sm:text-lg mb-1 text-blue-800">
+                  {title}
+                </h4>
+                <p className="text-sm text-gray-700 leading-snug">{desc}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Cara Rental */}
+      <section
+        className="bg-white text-gray-800 py-20 sm:py-24 px-3 sm:px-6"
+        id="cara-rental"
+      >
+        <div className="max-w-6xl mx-auto text-center">
+          <h3 className="text-xl sm:text-2xl md:text-3xl font-bold mb-10 sm:mb-12">
+            <span className="text-black">Cara Rental di </span>
+            <span className="text-blue-800">MotoRent</span>
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+            {[
+              {
+                title: "Pesan Kendaraan",
+                desc: "Pilih motor & tanggal via website.",
+                icon: "📄",
+              },
+              {
+                title: "Tunggu Konfirmasi",
+                desc: "Admin hubungi via WhatsApp.",
+                icon: "⏳",
+              },
+              {
+                title: "Bayar & Nikmati",
+                desc: "Lakukan pembayaran, motor siap digunakan.",
+                icon: "💳",
+              },
+            ].map((item, i) => (
+              <div
+                key={i}
+                className="p-5 sm:p-6 border rounded-2xl shadow hover:shadow-md transition bg-blue-50/30"
+              >
+                <div className="text-3xl sm:text-4xl mb-4">{item.icon}</div>
+                <h4 className="text-base sm:text-lg font-bold mb-2">
+                  {item.title}
+                </h4>
+                <p className="text-sm text-gray-600">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Keunggulan */}
+      <section className="bg-gray-50 text-gray-800 py-16 sm:py-20 px-3 sm:px-6">
+        <div className="max-w-6xl mx-auto text-center">
+          <h3 className="text-xl sm:text-2xl md:text-3xl font-bold text-blue-800 mb-8 sm:mb-10">
+            Kenapa Pilih MotoRent?
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
+            {[
+              {
+                icon: "🕒",
+                title: "Sewa 24 Jam",
+                desc: "Fleksibel sesuai kebutuhan.",
+              },
+              {
+                icon: "🛡️",
+                title: "Asuransi Unit",
+                desc: "Perlindungan kendaraan mulai 15 ribu.",
+              },
+              {
+                icon: "💰",
+                title: "Harga Hemat",
+                desc: "Mulai 40K/24 Jam, transparan, tanpa biaya tersembunyi.",
+              },
+              {
+                icon: "📞",
+                title: "CS Responsif",
+                desc: "Support cepat via WhatsApp.",
+              },
+              {
+                icon: "📍",
+                title: "Antar Jemput",
+                desc: "Motor diantar ke lokasi Anda.",
+              },
+              {
+                icon: "🆓",
+                title: "Tanpa DP/Deposit",
+                desc: "Booking tanpa DP/Deposit, tanpa ribet.",
+              },
+            ].map((item, i) => (
+              <div
+                key={i}
+                className="p-5 sm:p-6 rounded-2xl bg-white border hover:shadow-lg transition"
+              >
+                <div className="text-2xl sm:text-3xl mb-3">{item.icon}</div>
+                <h4 className="text-md font-bold mb-1">{item.title}</h4>
+                <p className="text-sm text-gray-600">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section id="faq" className="py-20 sm:py-24 bg-white text-gray-800">
+        <div className="max-w-6xl mx-auto px-2 sm:px-4">
+          <div className="text-center mb-10 sm:mb-12">
+            <h3 className="text-2xl sm:text-3xl font-bold mb-2 text-blue-800">
+              FAQ
+            </h3>
+            <p className="text-gray-500 text-sm sm:text-base">
+              Pertanyaan yang sering ditanyakan user
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-7 sm:gap-10">
+            {[
+              {
+                icon: "📋",
+                q: "Bagaimana cara pesan motor?",
+                a: "Pilih motor, isi form, ikuti instruksi di WhatsApp.",
+              },
+              {
+                icon: "🧾",
+                q: "Dokumen yang dibutuhkan?",
+                a: "KTP, SIM, atau kartu identitas lain.",
+              },
+              {
+                icon: "🚗",
+                q: "Lepas kunci atau driver?",
+                a: "Saat ini baru tersedia lepas kunci.",
+              },
+              {
+                icon: "🔞",
+                q: "Usia minimum sewa?",
+                a: "Minimal 17 tahun dengan identitas valid.",
+              },
+              {
+                icon: "💸",
+                q: "Biaya tambahan luar kota?",
+                a: "Ada tambahan, dikonfirmasi admin sebelum sewa.",
+              },
+              {
+                icon: "📦",
+                q: "Layanan antar jemput?",
+                a: "Ada, tarif mulai 50 ribu, bisa dipilih saat booking.",
+              },
+              {
+                icon: "💳",
+                q: "Cara bayar?",
+                a: "Transfer bank/e-wallet/kartu kredit, dibayar saat serah terima.",
+              },
+              {
+                icon: "⛽",
+                q: "Harus isi bensin sebelum kembali?",
+                a: "Kembalikan sesuai level saat terima motor.",
+              },
+            ].map(({ icon, q, a }, i) => (
+              <div key={i} className="flex items-start gap-3 sm:gap-4">
+                <div className="text-3xl sm:text-4xl text-blue-700">{icon}</div>
+                <div>
+                  <h4 className="font-semibold text-base sm:text-lg mb-1">
+                    {q}
+                  </h4>
+                  <p className="text-sm text-gray-600 leading-relaxed">{a}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* WhatsApp Floating */}
       <motion.div
         initial={{ scale: 1 }}
@@ -1382,82 +1810,5 @@ export default function DashboardUser() {
         </div>
       </footer>
     </div>
-  );
-}
-
-// === MOBILE NAVBAR ===
-function MobileNavbar({ navigate }) {
-  const [open, setOpen] = useState(false);
-
-  useEffect(() => {
-    const handler = () => {
-      if (window.innerWidth >= 640) setOpen(false);
-    };
-    window.addEventListener("resize", handler);
-    return () => window.removeEventListener("resize", handler);
-  }, []);
-
-  return (
-    <>
-      <button
-        className="sm:hidden flex flex-col justify-center items-center w-10 h-10 rounded-full border border-indigo-100 bg-indigo-50 hover:bg-indigo-200 transition focus:outline-none"
-        onClick={() => setOpen((v) => !v)}
-        aria-label="Buka menu navigasi"
-        type="button"
-      >
-        <span className="block w-6 h-0.5 bg-indigo-600 rounded mb-1" />
-        <span className="block w-6 h-0.5 bg-indigo-600 rounded mb-1" />
-        <span className="block w-6 h-0.5 bg-indigo-600 rounded" />
-      </button>
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ x: "100%" }}
-            animate={{ x: 0 }}
-            exit={{ x: "100%" }}
-            transition={{ type: "tween", duration: 0.22 }}
-            className="fixed top-0 right-0 w-64 h-full bg-white shadow-2xl z-[999] flex flex-col"
-            style={{
-              borderTopLeftRadius: "2rem",
-              borderBottomLeftRadius: "2rem",
-            }}
-          >
-            <div className="flex justify-between items-center px-6 py-5 border-b border-gray-100">
-              <span className="text-xl font-black text-indigo-700">
-                MotoRent
-              </span>
-              <button
-                onClick={() => setOpen(false)}
-                className="w-9 h-9 flex items-center justify-center bg-indigo-50 hover:bg-indigo-100 rounded-full text-2xl text-indigo-600"
-                aria-label="Tutup menu"
-              >
-                ×
-              </button>
-            </div>
-            <nav className="flex flex-col gap-2 px-6 py-6">
-              <button
-                onClick={() => {
-                  navigate("/dashboard/history");
-                  setOpen(false);
-                }}
-                className="flex items-center px-4 py-2 mb-2 rounded-full font-bold text-indigo-700 bg-indigo-100 hover:bg-indigo-200 transition text-base"
-              >
-                <History className="mr-2" /> Riwayat
-              </button>
-              <button
-                onClick={() => {
-                  localStorage.clear();
-                  navigate("/");
-                  setOpen(false);
-                }}
-                className="flex items-center px-4 py-2 rounded-full font-bold text-white bg-gradient-to-r from-pink-400 to-red-500 hover:opacity-90 transition text-base"
-              >
-                <LogOut className="mr-2" /> Logout
-              </button>
-            </nav>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </>
   );
 }
