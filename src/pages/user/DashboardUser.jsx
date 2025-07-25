@@ -624,7 +624,7 @@ export default function DashboardUser() {
       )}
 
       {/* HEADER */}
-      <header className="fixed top-0 z-50 w-full">
+      <header className="w-full">
         <nav className="max-w-7xl mx-auto mt-3 sm:mt-4 rounded-full bg-white/90 shadow-lg px-2 sm:px-6 py-2 sm:py-3 flex flex-col sm:flex-row gap-3 sm:gap-0 justify-between items-center border border-blue-100 backdrop-blur-lg">
           <div
             className="flex items-center gap-3 cursor-pointer select-none"
