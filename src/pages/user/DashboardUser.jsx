@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { History, LogOut, Bell } from "lucide-react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import API from "../../api/axios";
 import LogoNoBG from "../../assets/LogoNoBG.png";
@@ -46,8 +47,87 @@ const randomAvatar = (nama = "") =>
 
 // NOTIFIKASI DROPDOWN
 function NotifDropdown({ notifs, unreadCount, open, onOpen, onClickNotif }) {
+  if (typeof window === "undefined") return null; // SSR guard
+
+  // -- Dropdown Portal Content
+  const dropdown = open ? (
+    <AnimatePresence>
+      <motion.div
+        key="notif-portal"
+        initial={{ opacity: 0, y: -18, scale: 0.99 }}
+        animate={{ opacity: 1, y: 0, scale: 1 }}
+        exit={{ opacity: 0, y: -18, scale: 0.99 }}
+        transition={{ duration: 0.18 }}
+        style={{
+          position: "fixed",
+          top: 78, // <= ini bisa adjust (header+margin bell)
+          right: 36, // <= adjust biar pojok kanan, desktop/mobile
+          zIndex: 9999,
+          width: 330,
+          maxWidth: "92vw",
+          background: "white",
+          borderRadius: "1.25rem",
+          boxShadow: "0 12px 48px 0 rgba(74,105,255,.17)",
+          border: "1px solid #dbeafe",
+          overflow: "hidden",
+        }}
+        className="notif-dropdown"
+      >
+        <div className="px-5 py-3 border-b flex items-center gap-2 bg-blue-50">
+          <Bell className="text-blue-700" size={20} />
+          <span className="font-bold text-blue-900 text-base">Notifikasi</span>
+        </div>
+        <div className="max-h-80 overflow-y-auto">
+          {notifs.length === 0 ? (
+            <div className="px-6 py-7 text-gray-400 text-center text-base">
+              Tidak ada notifikasi
+            </div>
+          ) : (
+            notifs.map((notif) => (
+              <button
+                key={notif.id}
+                onClick={() => onClickNotif(notif)}
+                className={`flex text-left w-full gap-2 px-5 py-3 border-b last:border-0 hover:bg-blue-50 transition group ${
+                  notif.sudah_dibaca ? "opacity-80" : "bg-blue-50/30"
+                }`}
+                style={{ alignItems: "flex-start" }}
+              >
+                <div className="mt-0.5">
+                  {notif.tipe === "success" ? (
+                    <span className="inline-block text-lg">💳</span>
+                  ) : notif.tipe === "warning" ? (
+                    <span className="inline-block text-lg">⚠️</span>
+                  ) : (
+                    <span className="inline-block text-lg">🛵</span>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div
+                    className={`font-semibold text-[15px] leading-tight ${
+                      notif.tipe === "success"
+                        ? "text-blue-800"
+                        : notif.tipe === "warning"
+                        ? "text-yellow-700"
+                        : "text-pink-800"
+                    } group-hover:underline truncate`}
+                  >
+                    {notif.pesan}
+                  </div>
+                  <div className="text-xs text-gray-400 mt-1">
+                    {formatWIB(notif.createdAt)}
+                  </div>
+                </div>
+              </button>
+            ))
+          )}
+        </div>
+      </motion.div>
+    </AnimatePresence>
+  ) : null;
+
+  // -- Main Bell Button
   return (
-    <div className="relative notif-dropdown">
+    <>
       <button
         onClick={onOpen}
         className="relative group p-2 rounded-full bg-white shadow-md hover:bg-blue-100 transition notif-bell"
@@ -60,68 +140,8 @@ function NotifDropdown({ notifs, unreadCount, open, onOpen, onClickNotif }) {
           </span>
         )}
       </button>
-      <AnimatePresence>
-        {open && (
-          <motion.div
-            initial={{ opacity: 0, y: -18, scale: 0.99 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -18, scale: 0.99 }}
-            transition={{ duration: 0.18 }}
-            className="absolute right-0 mt-3 w-[330px] max-w-[92vw] bg-white border border-blue-100 rounded-2xl shadow-2xl z-50 overflow-hidden"
-          >
-            <div className="px-5 py-3 border-b flex items-center gap-2 bg-blue-50">
-              <Bell className="text-blue-700" size={20} />
-              <span className="font-bold text-blue-900 text-base">
-                Notifikasi
-              </span>
-            </div>
-            <div className="max-h-80 overflow-y-auto">
-              {notifs.length === 0 && (
-                <div className="px-6 py-7 text-gray-400 text-center text-base">
-                  Tidak ada notifikasi
-                </div>
-              )}
-              {notifs.map((notif) => (
-                <button
-                  key={notif.id}
-                  onClick={() => onClickNotif(notif)}
-                  className={`flex text-left w-full gap-2 px-5 py-3 border-b last:border-0 hover:bg-blue-50 transition group ${
-                    notif.sudah_dibaca ? "opacity-80" : "bg-blue-50/30"
-                  }`}
-                  style={{ alignItems: "flex-start" }}
-                >
-                  <div className="mt-0.5">
-                    {notif.tipe === "success" ? (
-                      <span className="inline-block text-lg">💳</span>
-                    ) : notif.tipe === "warning" ? (
-                      <span className="inline-block text-lg">⚠️</span>
-                    ) : (
-                      <span className="inline-block text-lg">🛵</span>
-                    )}
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div
-                      className={`font-semibold text-[15px] leading-tight ${
-                        notif.tipe === "success"
-                          ? "text-blue-800"
-                          : notif.tipe === "warning"
-                          ? "text-yellow-700"
-                          : "text-pink-800"
-                      } group-hover:underline truncate`}
-                    >
-                      {notif.pesan}
-                    </div>
-                    <div className="text-xs text-gray-400 mt-1">
-                      {formatWIB(notif.createdAt)}
-                    </div>
-                  </div>
-                </button>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </div>
+      {createPortal(dropdown, document.body)}
+    </>
   );
 }
 
