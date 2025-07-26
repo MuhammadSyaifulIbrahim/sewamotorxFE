@@ -191,13 +191,13 @@ export default function LandingPages() {
           <div className="space-x-1 sm:space-x-2 flex gap-2">
             <button
               onClick={() => navigate("/login")}
-              className="bg-gradient-to-r from-yellow-400 to-yellow-300 text-purple-800 px-5 sm:px-6 py-2 rounded-full shadow font-bold hover:opacity-90 transition text-sm sm:text-base"
+              className="bg-gradient-to-r from-yellow-400 to-yellow-300 text-purple-800 px-5 sm:px-6 py-2 rounded-full font-bold hover:opacity-90 transition text-sm sm:text-base"
             >
               Login
             </button>
             <button
               onClick={() => navigate("/register")}
-              className="bg-blue-700 text-white font-bold px-5 sm:px-6 py-2 rounded-full shadow hover:bg-yellow-400 hover:text-blue-900 transition text-sm sm:text-base"
+              className="bg-blue-700 text-white font-bold px-5 sm:px-6 py-2 rounded-full hover:bg-yellow-400 hover:text-blue-900 transition text-sm sm:text-base"
             >
               Register
             </button>
@@ -239,7 +239,7 @@ export default function LandingPages() {
       >
         <div className="absolute inset-0 bg-gradient-to-t from-blue-900/40 via-transparent to-yellow-200/0" />
         <div className="max-w-7xl mx-auto relative z-10 text-center">
-          <h2 className="text-2xl sm:text-4xl font-extrabold uppercase text-white drop-shadow-lg">
+          <h2 className="text-2xl sm:text-4xl font-extrabold uppercase text-white">
             Pilihan Motor Favorit
           </h2>
           <div className="h-1 w-24 bg-yellow-400 mx-auto mt-2 mb-7 sm:mb-10 rounded-full" />
@@ -265,16 +265,16 @@ export default function LandingPages() {
                   boxShadow: "0 8px 32px rgba(27, 74, 210, 0.18)",
                 }}
                 transition={{ type: "spring", stiffness: 200, damping: 17 }}
-                className="motor-card relative flex flex-col rounded-2xl min-w-[82vw] max-w-[94vw] sm:min-w-[320px] sm:max-w-xs md:min-w-[260px] md:max-w-[320px] w-full shadow-xl overflow-hidden border border-blue-100 bg-white text-black group snap-center"
+                className="motor-card relative flex flex-col rounded-2xl min-w-[82vw] max-w-[94vw] sm:min-w-[320px] sm:max-w-xs md:min-w-[260px] md:max-w-[320px] w-full overflow-hidden border border-blue-100 bg-white text-black group snap-center"
               >
                 {/* Badge Diskon dan Best Seller */}
                 {m.diskon > 0 && (
-                  <span className="absolute top-4 right-4 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full z-20 shadow">
+                  <span className="absolute top-4 right-4 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full z-20">
                     -{m.diskon}%
                   </span>
                 )}
                 {m.best && (
-                  <span className="absolute top-4 left-4 bg-yellow-400 text-purple-900 font-bold px-3 py-1 rounded-full text-xs shadow animate-pulse">
+                  <span className="absolute top-4 left-4 bg-yellow-400 text-purple-900 font-bold px-3 py-1 rounded-full text-xs animate-pulse">
                     Best Seller
                   </span>
                 )}
@@ -380,7 +380,7 @@ export default function LandingPages() {
           href="https://wa.me/6285776828467"
           target="_blank"
           rel="noopener noreferrer"
-          className="bg-green-500 hover:bg-green-600 text-white p-4 rounded-full shadow-xl transition"
+          className="bg-green-500 hover:bg-green-600 text-white p-4 rounded-full transition"
         >
           <BsWhatsapp size={28} />
         </a>
@@ -410,7 +410,7 @@ export default function LandingPages() {
                   <img
                     src={randomAvatar(t.user?.nama)}
                     alt={t.user?.nama || "Customer"}
-                    className="w-16 h-16 rounded-full object-cover mb-3 shadow"
+                    className="w-16 h-16 rounded-full object-cover mb-3"
                   />
                   <div className="flex items-center gap-1 text-yellow-400 mb-1">
                     {[...Array(5)].map((_, j) => (
@@ -543,7 +543,7 @@ export default function LandingPages() {
           ].map(({ title, desc, icon }, i) => (
             <div
               key={i}
-              className="flex gap-3 sm:gap-4 bg-gradient-to-br from-blue-50 via-white to-yellow-100 rounded-2xl sm:p-6 hover:shadow-lg transition"
+              className="flex gap-3 sm:gap-4 bg-gradient-to-br from-blue-50 via-white to-yellow-100 rounded-2xl sm:p-6 transition"
             >
               <div className="flex-shrink-0">{icon}</div>
               <div className="text-left">
@@ -587,7 +587,7 @@ export default function LandingPages() {
             ].map((item, i) => (
               <div
                 key={i}
-                className="p-5 sm:p-6 border rounded-2xl shadow hover:shadow-md transition bg-blue-50/30"
+                className="p-5 sm:p-6 border rounded-2xl hover:shadow-md transition bg-blue-50/30"
               >
                 <div className="text-3xl sm:text-4xl mb-4">{item.icon}</div>
                 <h4 className="text-base sm:text-lg font-bold mb-2">
