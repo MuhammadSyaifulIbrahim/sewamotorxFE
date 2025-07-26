@@ -15,13 +15,13 @@ import "swiper/css/pagination";
 import { Pagination, Autoplay } from "swiper/modules";
 import axios from "axios";
 // --- ASSET ---
-import GENIO from "../../assets/GENIO.png";
-import NMAX from "../../assets/NMAX.png";
-import XMAX from "../../assets/XMAX.png";
-import AEROX from "../../assets/AEROX.png";
-import SCOOPY from "../../assets/SCOOPY.png";
-import MIO from "../../assets/MIO.png";
-import PCX from "../../assets/PCX.png";
+import GENIO from "../../assets/GenioNoBG.png";
+import NMAX from "../../assets/NMAXNoBG.png";
+import XMAX from "../../assets/XMAXNoBG.png";
+import AEROX from "../../assets/AEROXNoBG.png";
+import SCOOPY from "../../assets/SCOOPYNoBG.png";
+import MIO from "../../assets/MIONoBG.png";
+import PCX from "../../assets/PCXNoBG.png";
 import BANNER1 from "../../assets/Carousel1.png";
 import BANNER2 from "../../assets/Carousel2.png";
 import BANNER3 from "../../assets/Carousel3.png";
@@ -39,7 +39,7 @@ const MOTORLIST = [
     brand: "HONDA",
     tahun: "2022",
     img: GENIO,
-    price: 50000,
+    price: 100000,
     type: "Matic",
     diskon: 10,
     best: true,
@@ -49,7 +49,7 @@ const MOTORLIST = [
     brand: "YAMAHA",
     tahun: "2023",
     img: NMAX,
-    price: 150000,
+    price: 200000,
     type: "Matic",
     diskon: 15,
     best: true,
@@ -59,9 +59,9 @@ const MOTORLIST = [
     brand: "YAMAHA",
     tahun: "2022",
     img: AEROX,
-    price: 100000,
+    price: 185000,
     type: "Matic",
-    diskon: 0,
+    diskon: 10,
     best: false,
   },
   {
@@ -69,7 +69,7 @@ const MOTORLIST = [
     brand: "HONDA",
     tahun: "2023",
     img: SCOOPY,
-    price: 50000,
+    price: 100000,
     type: "Matic",
     diskon: 0,
     best: false,
@@ -79,7 +79,7 @@ const MOTORLIST = [
     brand: "YAMAHA",
     tahun: "2021",
     img: MIO,
-    price: 50000,
+    price: 85000,
     type: "Matic",
     diskon: 0,
     best: false,
@@ -89,7 +89,7 @@ const MOTORLIST = [
     brand: "YAMAHA",
     tahun: "2023",
     img: XMAX,
-    price: 200000,
+    price: 300000,
     type: "Matic",
     diskon: 20,
     best: true,
@@ -99,7 +99,7 @@ const MOTORLIST = [
     brand: "HONDA",
     tahun: "2022",
     img: PCX,
-    price: 130000,
+    price: 275000,
     type: "Matic",
     diskon: 0,
     best: false,
@@ -173,7 +173,7 @@ export default function LandingPages() {
     <div className="scroll-smooth overflow-x-hidden font-sans bg-gradient-to-br from-blue-50 via-white to-yellow-50 min-h-screen">
       {/* Navbar */}
       <header className="w-full">
-        <nav className="max-w-7xl mx-auto mt-3 sm:mt-4 rounded-full bg-white/90 shadow-lg px-2 sm:px-6 py-2 sm:py-3 flex flex-col sm:flex-row gap-3 sm:gap-0 justify-between items-center border border-blue-100 backdrop-blur-lg">
+        <nav className="max-w-7xl mx-auto mt-3 sm:mt-4 rounded-full bg-white/90 sm:px-6 py-2 sm:py-3 flex flex-col sm:flex-row gap-3 sm:gap-0 justify-between items-center border border-blue-100 backdrop-blur-lg">
           <div
             className="flex items-center gap-3 cursor-pointer select-none"
             onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
@@ -207,7 +207,7 @@ export default function LandingPages() {
 
       {/* Banner Carousel */}
       <section className="mb-8 mt-8 max-w-6xl mx-auto w-full px-2">
-        <div className="rounded-3xl shadow-2xl overflow-hidden w-full aspect-video bg-gray-100">
+        <div className="rounded-3xl shadow-1xl overflow-hidden w-full aspect-video bg-gray-100">
           <Swiper
             modules={[Pagination, Autoplay]}
             pagination={{ clickable: true }}
@@ -265,13 +265,7 @@ export default function LandingPages() {
                   boxShadow: "0 8px 32px rgba(27, 74, 210, 0.18)",
                 }}
                 transition={{ type: "spring", stiffness: 200, damping: 17 }}
-                className={`
-                  motor-card relative rounded-2xl
-                  min-w-[82vw] max-w-[94vw]
-                  sm:min-w-[320px] sm:max-w-xs
-                  md:min-w-[260px] md:max-w-[320px]
-                  w-full shadow-xl overflow-hidden border border-blue-100 bg-white text-black group snap-center
-                `}
+                className="motor-card relative flex flex-col rounded-2xl min-w-[82vw] max-w-[94vw] sm:min-w-[320px] sm:max-w-xs md:min-w-[260px] md:max-w-[320px] w-full shadow-xl overflow-hidden border border-blue-100 bg-white text-black group snap-center"
               >
                 {/* Badge Diskon dan Best Seller */}
                 {m.diskon > 0 && (
@@ -297,58 +291,62 @@ export default function LandingPages() {
                 </div>
 
                 {/* Detail & Button */}
-                <div className="p-3 pb-4 pt-2">
-                  <div className="text-xs font-bold mb-1 uppercase text-gray-500">
+                <div className="p-3 pb-4 pt-2 flex flex-col flex-grow">
+                  {/* Brand + Tahun */}
+                  <div className="text-xs font-bold mb-1 uppercase text-gray-500 min-h-[36px]">
                     {m.brand} {m.name}{" "}
                     <span className="text-xs font-normal">{m.tahun}</span>
                   </div>
-                  <h3 className="font-extrabold text-lg mb-1">{m.name}</h3>
 
-                  <div className="flex items-center gap-2 text-gray-700 mb-2 flex-wrap">
+                  {/* Nama */}
+                  <h3 className="font-extrabold text-lg mb-1 min-h-[28px]">
+                    {m.name}
+                  </h3>
+
+                  {/* Jenis & Harga */}
+                  <div className="flex items-center gap-2 text-gray-700 mb-2 flex-wrap min-h-[48px]">
                     <span className="bg-blue-100 text-blue-800 text-xs rounded-full px-2 py-0.5">
                       {m.type}
                     </span>
-                    <div className="text-sm text-gray-700">
-                      {m.diskon > 0 ? (
-                        <div className="flex items-center gap-2">
-                          <span className="line-through text-red-500 font-medium">
-                            Rp{m.price.toLocaleString("id-ID")}
-                          </span>
-                          <span className="text-green-600 font-bold text-base">
-                            Rp
-                            {(m.price * (1 - m.diskon / 100)).toLocaleString(
-                              "id-ID"
-                            )}
-                            /hari
-                          </span>
-                        </div>
-                      ) : (
-                        <span className="text-green-600 font-bold text-base">
-                          Rp{m.price.toLocaleString("id-ID")}/hari
-                        </span>
-                      )}
+                    <div className="flex flex-col gap-1 min-h-[45px]">
+                      <span
+                        className={`line-through text-red-500 font-medium text-sm ${
+                          m.diskon > 0 ? "" : "invisible"
+                        }`}
+                      >
+                        Rp{m.price.toLocaleString("id-ID")}
+                      </span>
+                      <span className="text-green-600 font-bold text-base">
+                        Rp
+                        {(m.price * (1 - m.diskon / 100)).toLocaleString(
+                          "id-ID"
+                        )}
+                        /hari
+                      </span>
                     </div>
                   </div>
 
-                  {/* Rating & Fasilitas */}
-                  <div className="flex items-center gap-1 text-yellow-500 mb-2">
+                  {/* Rating */}
+                  <div className="flex items-center gap-1 text-yellow-500 mb-2 min-h-[24px]">
                     {[...Array(5)].map((_, j) => (
                       <FaStar key={j} />
                     ))}
                   </div>
-                  <div className="flex justify-around text-xs text-gray-700 mb-3">
+
+                  {/* Fasilitas */}
+                  <div className="flex justify-around text-xs text-gray-700 mb-3 min-h-[24px]">
                     <span>🪖 2x Helm</span>
                     <span>🧥 2x Jas Hujan</span>
                     <span>📱 Holder HP</span>
                   </div>
 
-                  {/* ✅ Tombol Sewa Motor */}
+                  {/* Tombol Sewa Motor */}
                   <button
                     onClick={() => {
                       alert("Untuk memesan, silakan login terlebih dahulu.");
                       navigate("/login");
                     }}
-                    className="w-full bg-blue-700 hover:bg-blue-800 text-white text-sm font-semibold py-2 rounded-full transition"
+                    className="mt-auto w-full bg-blue-700 hover:bg-blue-800 text-white text-sm font-semibold py-2 rounded-full transition"
                   >
                     Sewa Motor
                   </button>
@@ -407,7 +405,7 @@ export default function LandingPages() {
               reviewList.map((t, i) => (
                 <div
                   key={i}
-                  className="bg-white p-7 rounded-2xl shadow-lg flex flex-col items-center"
+                  className="bg-white p-7 rounded-2xl flex flex-col items-center"
                 >
                   <img
                     src={randomAvatar(t.user?.nama)}
@@ -449,7 +447,7 @@ export default function LandingPages() {
         className="bg-blue-800 text-yellow-400 py-16 sm:py-20 px-3 sm:px-6"
         id="location"
       >
-        <div className="max-w-6xl mx-auto text-center border border-yellow-400 rounded-xl py-7 sm:py-10 px-2 sm:px-4 shadow-lg">
+        <div className="max-w-6xl mx-auto text-center border border-yellow-400 rounded-xl py-7 sm:py-10 px-2 sm:px-4">
           <h2 className="text-2xl sm:text-4xl font-bold mb-4 sm:mb-6 text-yellow-400">
             Available At
           </h2>
@@ -458,7 +456,7 @@ export default function LandingPages() {
           </p>
           <a
             href="https://wa.me/6285776828467"
-            className="bg-yellow-400 hover:bg-yellow-300 text-black font-semibold py-2 px-5 sm:px-6 rounded shadow transition"
+            className="bg-yellow-400 hover:bg-yellow-300 text-black font-semibold py-2 px-5 sm:px-6 rounded"
           >
             Contact Us
           </a>
@@ -545,7 +543,7 @@ export default function LandingPages() {
           ].map(({ title, desc, icon }, i) => (
             <div
               key={i}
-              className="flex gap-3 sm:gap-4 bg-gradient-to-br from-blue-50 via-white to-yellow-100 rounded-2xl shadow-md p-5 sm:p-6 hover:shadow-lg transition"
+              className="flex gap-3 sm:gap-4 bg-gradient-to-br from-blue-50 via-white to-yellow-100 rounded-2xl sm:p-6 hover:shadow-lg transition"
             >
               <div className="flex-shrink-0">{icon}</div>
               <div className="text-left">

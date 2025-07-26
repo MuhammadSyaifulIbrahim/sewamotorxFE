@@ -130,7 +130,7 @@ function NotifDropdown({ notifs, unreadCount, open, onOpen, onClickNotif }) {
     <>
       <button
         onClick={onOpen}
-        className="relative group p-2 rounded-full bg-white shadow-md hover:bg-blue-100 transition notif-bell"
+        className="relative group p-2 rounded-full bg-white hover:bg-blue-100 transition notif-bell"
         title="Notifikasi"
       >
         <Bell size={28} className="text-blue-800" />
@@ -636,7 +636,7 @@ export default function DashboardUser() {
       {/* LOADING OVERLAY */}
       {loading && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-2xl flex items-center gap-4 shadow-xl">
+          <div className="bg-white p-6 rounded-2xl flex items-center gap-4">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600"></div>
             <span className="font-semibold text-indigo-700">Memproses...</span>
           </div>
@@ -645,7 +645,7 @@ export default function DashboardUser() {
 
       {/* HEADER */}
       <header className="w-full">
-        <nav className="max-w-7xl mx-auto mt-3 sm:mt-4 rounded-full bg-white/90 shadow-lg px-2 sm:px-6 py-2 sm:py-3 flex flex-col sm:flex-row gap-3 sm:gap-0 justify-between items-center border border-blue-100 backdrop-blur-lg">
+        <nav className="max-w-7xl mx-auto mt-3 sm:mt-4 rounded-full bg-white/90 px-2 sm:px-6 py-2 sm:py-3 flex flex-col sm:flex-row gap-3 sm:gap-0 justify-between items-center border border-blue-100 backdrop-blur-lg">
           <div
             className="flex items-center gap-3 cursor-pointer select-none"
             onClick={() => navigate("/dashboard")}
@@ -671,7 +671,7 @@ export default function DashboardUser() {
             />
             <button
               onClick={() => navigate("/dashboard/history")}
-              className="hidden sm:flex items-center gap-2 px-6 py-2 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold text-base shadow transition"
+              className="hidden sm:flex items-center gap-2 px-6 py-2 rounded-full bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold text-base transition"
             >
               <History className="w-5 h-5" />
               Riwayat
@@ -681,7 +681,7 @@ export default function DashboardUser() {
                 localStorage.clear();
                 navigate("/");
               }}
-              className="hidden sm:flex items-center gap-2 px-6 py-2 rounded-full bg-gradient-to-r from-pink-400 to-red-500 text-white font-bold text-base shadow hover:opacity-90 transition"
+              className="hidden sm:flex items-center gap-2 px-6 py-2 rounded-full bg-gradient-to-r from-pink-400 to-red-500 text-white font-bold text-base hover:opacity-90 transition"
             >
               <LogOut className="w-5 h-5" />
               Logout
@@ -695,7 +695,7 @@ export default function DashboardUser() {
 
       {/* HERO CAROUSEL */}
       <section className="mt-24 mb-6 max-w-5xl mx-auto w-full px-2">
-        <div className="rounded-3xl shadow-2xl overflow-hidden w-full aspect-video bg-gray-100">
+        <div className="rounded-3xl shadow-1xl overflow-hidden w-full aspect-video bg-gray-100">
           <Swiper
             modules={[Pagination, Autoplay]}
             pagination={{ clickable: true }}
@@ -725,7 +725,7 @@ export default function DashboardUser() {
           placeholder="Cari motor favoritmu..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="w-full px-5 py-3 mb-4 rounded-2xl border-2 border-indigo-100 font-semibold focus:ring-2 focus:ring-indigo-400 bg-white shadow focus:outline-none"
+          className="w-full px-5 py-3 mb-4 rounded-2xl border-2 border-indigo-100 font-semibold focus:ring-2 focus:ring-indigo-400 bg-white focus:outline-none"
         />
         <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
           <select
@@ -738,7 +738,7 @@ export default function DashboardUser() {
                 setFilterHarga({ min: 200001, max: Infinity });
               else setFilterHarga({ min: 0, max: Infinity });
             }}
-            className="px-4 py-2 rounded-xl border-2 border-indigo-100 font-semibold bg-white shadow"
+            className="px-4 py-2 rounded-xl border-2 border-indigo-100 font-semibold bg-white"
           >
             <option value="">Semua Harga</option>
             <option value="1">Di bawah Rp100.000</option>
@@ -773,14 +773,14 @@ export default function DashboardUser() {
             variants={cardVariants}
             initial="initial"
             whileHover="hover"
-            className="bg-white/90 rounded-3xl shadow-xl overflow-hidden relative p-5 pb-6 border-2 border-indigo-100 flex flex-col items-center transition-all cursor-pointer group"
+            className="bg-white/90 rounded-3xl overflow-hidden relative p-5 pb-6 border-2 border-indigo-100 flex flex-col items-center transition-all cursor-pointer group"
             style={{
               minHeight: "350px",
               boxShadow: "0 4px 32px 0 rgba(31,67,183,0.07)",
             }}
           >
             <span
-              className={`absolute top-4 left-4 text-xs font-bold px-3 py-1.5 rounded-full shadow border ${
+              className={`absolute top-4 left-4 text-xs font-bold px-3 py-1.5 rounded-full   border ${
                 motor.stok > 0
                   ? "bg-green-100 text-green-800 border-green-200"
                   : "bg-red-100 text-red-800 border-red-200"
@@ -795,7 +795,7 @@ export default function DashboardUser() {
               }
               alt={motor.nama}
               whileHover={{ scale: 1.1 }}
-              className="w-40 h-36 sm:w-48 sm:h-44 object-contain mb-5 bg-white rounded-2xl shadow-md group-hover:drop-shadow-xl transition"
+              className="w-40 h-36 sm:w-48 sm:h-44 object-contain mb-5 bg-white rounded-2xl group-hover:drop-shadow-xl transition"
               onClick={() => setModalImage(motor.gambar)}
               style={{ background: "#f4f6ff" }}
               onError={(e) =>
@@ -817,14 +817,14 @@ export default function DashboardUser() {
                 <div className="line-through text-red-400 font-semibold">
                   Rp {Number(motor.harga_sewa).toLocaleString("id-ID")} / hari
                 </div>
-                <div className="text-lg font-extrabold text-green-600 drop-shadow">
+                <div className="text-lg font-extrabold text-green-600">
                   Rp{" "}
                   {Math.round(
                     motor.harga_sewa * (1 - motor.diskon / 100)
                   ).toLocaleString("id-ID")}{" "}
                   / hari
                 </div>
-                <span className="inline-block text-xs bg-yellow-200 text-yellow-800 font-bold px-3 py-1 rounded-full shadow">
+                <span className="inline-block text-xs bg-yellow-200 text-yellow-800 font-bold px-3 py-1 rounded-full">
                   {motor.diskon}% OFF
                 </span>
               </div>
@@ -837,7 +837,7 @@ export default function DashboardUser() {
               whileTap={{ scale: 0.97 }}
               disabled={motor.stok === 0 || loading}
               onClick={() => setSelectedMotor(motor)}
-              className={`mt-6 w-full py-3 rounded-full font-extrabold tracking-wider shadow-md text-base transition ${
+              className={`mt-6 w-full py-3 rounded-full font-extrabold tracking-wider text-base transition ${
                 motor.stok === 0 || loading
                   ? "bg-gray-300 text-gray-600 cursor-not-allowed"
                   : "bg-gradient-to-r from-indigo-500 to-blue-400 text-white hover:from-indigo-600 hover:to-blue-500"
@@ -893,7 +893,7 @@ export default function DashboardUser() {
             transition={{ duration: 0.15 }}
             className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4"
           >
-            <div className="bg-white rounded-3xl shadow-xl p-8 w-full max-w-2xl relative overflow-y-auto max-h-[95vh]">
+            <div className="bg-white rounded-3xl p-8 w-full max-w-2xl relative overflow-y-auto max-h-[95vh]">
               <button
                 onClick={() => setSelectedMotor(null)}
                 className="absolute top-4 right-4 text-3xl font-black text-pink-600 hover:text-pink-800"
@@ -1404,7 +1404,7 @@ export default function DashboardUser() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full py-3 rounded-full font-black bg-gradient-to-r from-indigo-600 to-blue-400 text-white hover:from-indigo-700 hover:to-blue-500 shadow-lg transition text-lg"
+                  className="w-full py-3 rounded-full font-black bg-gradient-to-r from-indigo-600 to-blue-400 text-white hover:from-indigo-700 hover:to-blue-500 transition text-lg"
                   style={{ fontFamily: "Inter, sans-serif" }}
                 >
                   Konfirmasi & Sewa
@@ -1434,12 +1434,12 @@ export default function DashboardUser() {
               reviewList.map((t, i) => (
                 <div
                   key={i}
-                  className="bg-white p-7 rounded-2xl shadow-lg flex flex-col items-center"
+                  className="bg-white p-7 rounded-2xl flex flex-col items-center"
                 >
                   <img
                     src={randomAvatar(t.user?.nama)}
                     alt={t.user?.nama || "Customer"}
-                    className="w-16 h-16 rounded-full object-cover mb-3 shadow"
+                    className="w-16 h-16 rounded-full object-cover mb-3"
                   />
                   <div className="flex items-center gap-1 text-yellow-400 mb-1">
                     {[...Array(5)].map((_, j) => (
@@ -1476,7 +1476,7 @@ export default function DashboardUser() {
         className="bg-blue-800 text-yellow-400 py-16 sm:py-20 px-3 sm:px-6"
         id="location"
       >
-        <div className="max-w-6xl mx-auto text-center border border-yellow-400 rounded-xl py-7 sm:py-10 px-2 sm:px-4 shadow-lg">
+        <div className="max-w-6xl mx-auto text-center border border-yellow-400 rounded-xl py-7 sm:py-10 px-2 sm:px-4">
           <h2 className="text-2xl sm:text-4xl font-bold mb-4 sm:mb-6 text-yellow-400">
             Available At
           </h2>
@@ -1485,7 +1485,7 @@ export default function DashboardUser() {
           </p>
           <a
             href="https://wa.me/6285776828467"
-            className="bg-yellow-400 hover:bg-yellow-300 text-black font-semibold py-2 px-5 sm:px-6 rounded shadow transition"
+            className="bg-yellow-400 hover:bg-yellow-300 text-black font-semibold py-2 px-5 sm:px-6 rounded transition"
           >
             Contact Us
           </a>
@@ -1572,7 +1572,7 @@ export default function DashboardUser() {
           ].map(({ title, desc, icon }, i) => (
             <div
               key={i}
-              className="flex gap-3 sm:gap-4 bg-gradient-to-br from-blue-50 via-white to-yellow-100 rounded-2xl shadow-md p-5 sm:p-6 hover:shadow-lg transition"
+              className="flex gap-3 sm:gap-4 bg-gradient-to-br from-blue-50 via-white to-yellow-100 rounded-2xl p-5 sm:p-6 hover:shadow-lg transition"
             >
               <div className="flex-shrink-0">{icon}</div>
               <div className="text-left">
