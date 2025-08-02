@@ -387,7 +387,10 @@ export default function LandingPages() {
       </motion.div>
 
       {/* Testimoni / Review Customer */}
-      <section className="py-16 sm:py-20 px-3 sm:px-6 bg-gradient-to-br from-yellow-100 via-blue-50 to-white">
+      <section
+        id="testimoni"
+        className="py-16 sm:py-20 px-3 sm:px-6 bg-gradient-to-br from-yellow-100 via-blue-50 to-white"
+      >
         <div className="max-w-5xl mx-auto text-center mb-9 sm:mb-12">
           <h3 className="text-2xl sm:text-3xl font-bold mb-2 text-blue-800">
             Apa Kata Customer?
@@ -732,7 +735,7 @@ export default function LandingPages() {
             </ul>
             <div className="mt-6 space-y-1 text-sm">
               <p>📧 muhammadsyaifulibrahim352@gmail.com</p>
-              <p>📞 085776828467 </p>
+              <p>📞 +62-857-7682-8467 </p>
               <p>📸 Instagram: @motorent</p>
             </div>
           </div>
@@ -748,10 +751,26 @@ export default function LandingPages() {
           <div>
             <h4 className="font-semibold text-white text-lg mb-4">Support</h4>
             <ul className="text-sm space-y-2">
-              <li>FAQ</li>
-              <li>Testimoni</li>
-              <li>Privacy Policy</li>
-              <li>Terms of Service</li>
+              <li>
+                <a href="#faq" className="hover:underline">
+                  FAQ
+                </a>
+              </li>
+              <li>
+                <a href="#testimoni" className="hover:underline">
+                  Testimoni
+                </a>
+              </li>
+              <li>
+                <a href="#about" className="hover:underline">
+                  Layanan Kami
+                </a>
+              </li>
+              <li>
+                <a href="#cara-rental" className="hover:underline">
+                  Cara Rental
+                </a>
+              </li>
             </ul>
           </div>
         </div>
