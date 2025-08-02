@@ -1415,10 +1415,10 @@ export default function DashboardUser() {
         )}
       </AnimatePresence>
 
-      {/* --- SECTION TESTIMONI/REVIEW CUSTOMER --- */}
+      {/* Testimoni / Review Customer */}
       <section
         id="testimoni"
-        className="py-16 sm:py-20 px-3 sm:px-6 bg-gradient-to-br ..."
+        className="py-16 sm:py-20 px-3 sm:px-6 bg-gradient-to-br from-yellow-100 via-blue-50 to-white"
       >
         <div className="max-w-5xl mx-auto text-center mb-9 sm:mb-12">
           <h3 className="text-2xl sm:text-3xl font-bold mb-2 text-blue-800">
