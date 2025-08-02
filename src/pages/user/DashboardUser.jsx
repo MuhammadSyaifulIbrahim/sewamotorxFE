@@ -1774,7 +1774,7 @@ export default function DashboardUser() {
         </a>
       </motion.div>
 
-      {/* FOOTER */}
+      {/* Footer */}
       <footer className="bg-blue-900 text-white py-12 sm:py-16 px-3 sm:px-6">
         <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-8">
           <div className="md:col-span-2">
@@ -1786,7 +1786,7 @@ export default function DashboardUser() {
             </ul>
             <div className="mt-6 space-y-1 text-sm">
               <p>📧 muhammadsyaifulibrahim352@gmail.com</p>
-              <p>📞 085776828467 </p>
+              <p>📞 +62-857-7682-8467 </p>
               <p>📸 Instagram: @motorent</p>
             </div>
           </div>
